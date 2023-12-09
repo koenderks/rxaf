@@ -1,0 +1,11 @@
+^.yml$
+^cran-comments.md$
+^codecov.yml$
+^.github$
+^logo\.png$
+^Meta$
+^CRAN-RELEASE$
+^CITATION\.cff$
+^LICENSE\.md$
+^\.github$
+.lintr

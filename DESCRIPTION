@@ -1,0 +1,25 @@
+Package: rxaf
+Title: Read Dutch XML Audit Files (XAF)
+Version: 1.0.0
+Date: 2023-12-09
+Authors@R:
+    person(given = "Koen",
+           family = "Derks",
+           role = c("aut", "cre"),
+           email = "koen-derks@hotmail.com")
+Description: The 'rxaf' package provides functionalities to read and parse Dutch
+    XML Audit Files (XAF). These files are commonly used in the Netherlands for
+    financial and auditing purposes.
+Imports:
+    dplyr,
+    utils,
+    xml2
+Suggests:
+    testthat (>= 3.0.0)
+URL: https://github.com/koenderks/rxaf
+BugReports: https://github.com/koenderks/rxaf/issues
+License: GPL (>= 3)
+Encoding: UTF-8
+Language: en-US
+RoxygenNote: 7.2.3
+Config/testthat/edition: 3
