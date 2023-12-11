@@ -1,3 +1,11 @@
+.xafvalue <- function(x) {
+  if (length(x) > 0) {
+    return(x[[1]])
+  } else {
+    return(NA)
+  }
+}
+
 .construct_vats_index <- function(company) {
   indices <- which(names(company$vatCodes) == "vatCode")
   n <- length(indices)
@@ -10,10 +18,10 @@
   index <- 1
   for (i in indices) {
     vatCode <- company$vatCodes[i]$vatCode
-    tb$vatID[index] <- vatCode$vatID[[1]]
-    tb$vatDesc[index] <- if (length(vatCode$vatDesc) > 0) vatCode$vatDesc[[1]] else NA
-    tb$vatToClaimAccID[index] <- if (length(vatCode$vatToClaimAccID) > 0) vatCode$vatToClaimAccID[[1]] else NA
-    tb$vatToPayAccID[index] <- if (length(vatCode$vatToPayAccID) > 0) vatCode$vatToPayAccID[[1]] else NA
+    tb$vatID[index] <- .xafvalue(vatCode$vatID)
+    tb$vatDesc[index] <- .xafvalue(vatCode$vatDesc)
+    tb$vatToClaimAccID[index] <- .xafvalue(vatCode$vatToClaimAccID)
+    tb$vatToPayAccID[index] <- .xafvalue(vatCode$vatToPayAccID)
     index <- index + 1
   }
   tb <- tb[order(tb$vatID), ]
@@ -46,23 +54,23 @@
   index <- 1
   for (i in indices) {
     customerSupplier <- company$customersSuppliers[i]$customerSupplier
-    tb$custSupID[index] <- customerSupplier$custSupID[[1]]
-    tb$custSupName[index] <- if (length(customerSupplier$custSupName) > 0) customerSupplier$custSupName[[1]] else NA
-    tb$commerceNr[index] <- if (length(customerSupplier$commerceNr) > 0) customerSupplier$commerceNr[[1]] else NA
-    tb$taxRegistrationCountry[index] <- if (length(customerSupplier$taxRegistrationCountry) > 0) customerSupplier$taxRegistrationCountry[[1]] else NA
-    tb$taxRegIdent[index] <- if (length(customerSupplier$taxRegIdent) > 0) customerSupplier$taxRegIdent[[1]] else NA
-    tb$custSupTp[index] <- if (length(customerSupplier$custSupTp) > 0) customerSupplier$custSupTp[[1]] else NA
-    tb$streetName[index] <- if (length(customerSupplier$streetAddress$streetname) > 0) customerSupplier$streetAddress$streetname[[1]] else NA
-    tb$country[index] <- if (length(customerSupplier$streetAddress$country) > 0) customerSupplier$streetAddress$country[[1]] else NA
-    tb$city[index] <- if (length(customerSupplier$streetAddress$city) > 0) customerSupplier$streetAddress$city[[1]] else NA
-    tb$postalCode[index] <- if (length(customerSupplier$streetAddress$postalCode) > 0) customerSupplier$streetAddress$postalCode[[1]] else NA
-    tb$telephone[index] <- if (length(customerSupplier$telephone) > 0) customerSupplier$telephone[[1]] else NA
-    tb$website[index] <- if (length(customerSupplier$website) > 0) customerSupplier$website[[1]] else NA
-    tb$contact[index] <- if (length(customerSupplier$contact) > 0) customerSupplier$contact[[1]] else NA
-    tb$fax[index] <- if (length(customerSupplier$fax) > 0) customerSupplier$fax[[1]] else NA
-    tb$email[index] <- if (length(customerSupplier$eMail) > 0) customerSupplier$eMail[[1]] else NA
-    tb$bankAccNr[index] <- if (length(customerSupplier$bankAccount$bankAccNr) > 0) customerSupplier$bankAccount$bankAccNr[[1]] else NA
-    tb$bankIdCd[index] <- if (length(customerSupplier$bankAccount$bankIdCd) > 0) customerSupplier$bankAccount$bankIdCd[[1]] else NA
+    tb$custSupID[index] <- .xafvalue(customerSupplier$custSupID)
+    tb$custSupName[index] <- .xafvalue(customerSupplier$custSupName)
+    tb$commerceNr[index] <- .xafvalue(customerSupplier$commerceNr)
+    tb$taxRegistrationCountry[index] <- .xafvalue(customerSupplier$taxRegistrationCountry)
+    tb$taxRegIdent[index] <- .xafvalue(customerSupplier$taxRegIdent)
+    tb$custSupTp[index] <- .xafvalue(customerSupplier$custSupTp)
+    tb$streetName[index] <- .xafvalue(customerSupplier$streetAddress$streetname)
+    tb$country[index] <- .xafvalue(customerSupplier$streetAddress$country)
+    tb$city[index] <- .xafvalue(customerSupplier$streetAddress$city)
+    tb$postalCode[index] <- .xafvalue(customerSupplier$streetAddress$postalCode)
+    tb$telephone[index] <- .xafvalue(customerSupplier$telephone)
+    tb$website[index] <- .xafvalue(customerSupplier$website)
+    tb$contact[index] <- .xafvalue(customerSupplier$contact)
+    tb$fax[index] <- .xafvalue(customerSupplier$fax)
+    tb$email[index] <- .xafvalue(customerSupplier$eMail)
+    tb$bankAccNr[index] <- .xafvalue(customerSupplier$bankAccount$bankAccNr)
+    tb$bankIdCd[index] <- .xafvalue(customerSupplier$bankAccount$bankIdCd)
     index <- index + 1
   }
   tb <- tb[order(tb$custSupID), ]
@@ -86,17 +94,17 @@
   index <- 1
   for (i in indices) {
     ledgerAccount <- company$generalLedger[i]$ledgerAccount
-    tb$accID[index] <- ledgerAccount$accID[[1]]
-    tb$accDesc[index] <- ledgerAccount$accDesc[[1]]
-    tb$accTp[index] <- ledgerAccount$accTp[[1]]
-    tb$leadCode[index] <- if (length(ledgerAccount$leadCode) > 0) ledgerAccount$leadCode[[1]] else NA
-    tb$leadDescription[index] <- if (length(ledgerAccount$leadDescription) > 0) ledgerAccount$leadDescription[[1]] else NA
-    tb$leadReference[index] <- if (length(ledgerAccount$leadReference) > 0) ledgerAccount$leadReference[[1]] else NA
+    tb$accID[index] <- .xafvalue(ledgerAccount$accID)
+    tb$accDesc[index] <- .xafvalue(ledgerAccount$accDesc)
+    tb$accTp[index] <- .xafvalue(ledgerAccount$accTp)
+    tb$leadCode[index] <- .xafvalue(ledgerAccount$leadCode)
+    tb$leadDescription[index] <- .xafvalue(ledgerAccount$leadDescription)
+    tb$leadReference[index] <- .xafvalue(ledgerAccount$leadReference)
     tb$accountType[index] <- switch(lang,
       "nl" = ifelse(tb$accTp[index] == "P", "Winst & Verlies", ifelse(tb$accTp[index] == "B", "Balans", "Onbekend balanstype")),
       "en" = ifelse(tb$accTp[index] == "P", "Profit & Loss", ifelse(tb$accTp[index] == "B", "Balance Sheet", "Unknown accounttype"))
     )
-    tb$accountKind[index] <- switch(lang,
+    tb$accountKind[index] <- ifelse(!is.na(tb$accID[index]), switch(lang,
       "nl" = switch(substring(tb$accID[index], 1, 1),
         "0" = "Vaste activa en passiva",
         "1" = "Vlottende activa en passiva",
@@ -121,7 +129,7 @@
         "8" = "Revenue account",
         "9" = "Financial income and expenses"
       )
-    )
+    ), NA)
     index <- index + 1
   }
   tb <- tb[order(tb$accID), ]
@@ -143,33 +151,35 @@
   index <- 1
   for (i in indices) {
     journal <- company$transactions[i]$journal
-    tb$jrnID[index] <- journal$jrnID[[1]]
-    tb$jrnDesc[index] <- journal$desc[[1]]
-    tb$jrnTp[index] <- journal$jrnTp[[1]]
-    tb$offsetAccID[index] <- if (is.null(journal$offsetAccID[[1]])) NA else journal$offsetAccID[[1]]
-    tb$bankAccNr[index] <- if (!is.null(journal$bankAccNr)) journal$bankAccNr[[1]] else NA
-    if (lang == "nl") {
-      tb$journalType[index] <- ifelse(tb$jrnTp[index] %in% c("Z", "B", "P", "O", "C", "M", "Y", "S"), switch(tb$jrnTp[index],
-        "Z" = "Memoriaal",
-        "B" = "Bankboek",
-        "P" = "Inkoopboek",
-        "O" = "Open/Sluit balans",
-        "C" = "Kasboek",
-        "M" = "Memoriaal",
-        "Y" = "Salaris",
-        "S" = "Verkoopboek"
-      ), "Onbekend dagboek")
-    } else {
-      tb$journalType[index] <- ifelse(tb$jrnTp[index] %in% c("Z", "B", "P", "O", "C", "M", "Y", "S"), switch(tb$jrnTp[index],
-        "Z" = "Memorial",
-        "B" = "Bank book",
-        "P" = "Purchase book",
-        "O" = "Open/Close balance",
-        "C" = "Cash book",
-        "M" = "Memorial",
-        "Y" = "Salary",
-        "S" = "Sales book"
-      ), "Unknown journal")
+    tb$jrnID[index] <- .xafvalue(journal$jrnID)
+    tb$jrnDesc[index] <- .xafvalue(journal$desc)
+    tb$jrnTp[index] <- .xafvalue(journal$jrnTp)
+    tb$offsetAccID[index] <- .xafvalue(journal$offsetAccID)
+    tb$bankAccNr[index] <- .xafvalue(journal$bankAccNr)
+    if (!is.na(tb$jrnTp[index])) {
+      if (lang == "nl") {
+        tb$journalType[index] <- ifelse(tb$jrnTp[index] %in% c("Z", "B", "P", "O", "C", "M", "Y", "S"), switch(tb$jrnTp[index],
+          "Z" = "Memoriaal",
+          "B" = "Bankboek",
+          "P" = "Inkoopboek",
+          "O" = "Open/Sluit balans",
+          "C" = "Kasboek",
+          "M" = "Memoriaal",
+          "Y" = "Salaris",
+          "S" = "Verkoopboek"
+        ), "Onbekend dagboek")
+      } else {
+        tb$journalType[index] <- ifelse(tb$jrnTp[index] %in% c("Z", "B", "P", "O", "C", "M", "Y", "S"), switch(tb$jrnTp[index],
+          "Z" = "Memorial",
+          "B" = "Bank book",
+          "P" = "Purchase book",
+          "O" = "Open/Close balance",
+          "C" = "Cash book",
+          "M" = "Memorial",
+          "Y" = "Salary",
+          "S" = "Sales book"
+        ), "Unknown journal")
+      }
     }
     index <- index + 1
   }
