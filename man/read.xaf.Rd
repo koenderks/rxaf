@@ -8,8 +8,7 @@ read.xaf(
   file,
   progress = interactive(),
   clean = TRUE,
-  lang = c("nl", "en"),
-  version = 3
+  lang = c("nl", "en")
 )
 }
 \arguments{
@@ -20,8 +19,6 @@ read.xaf(
 \item{clean}{logical. Whether to clean data before return.}
 
 \item{lang}{character. Language of the added text and column names.}
-
-\item{version}{integer. XAF version (currently only version 3 is supported).}
 }
 \value{
 A data frame containing the parsed data from the XAF file.

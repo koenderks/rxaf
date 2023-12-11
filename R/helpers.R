@@ -80,7 +80,8 @@
     leadCode = character(n),
     leadDescription = character(n),
     leadReference = character(n),
-    accountType = character(n)
+    accountType = character(n),
+    accountKind = character(n)
   )
   index <- 1
   for (i in indices) {
@@ -94,6 +95,32 @@
     tb$accountType[index] <- switch(lang,
       "nl" = ifelse(tb$accTp[index] == "P", "Winst & Verlies", ifelse(tb$accTp[index] == "B", "Balans", "Onbekend balanstype")),
       "en" = ifelse(tb$accTp[index] == "P", "Profit & Loss", ifelse(tb$accTp[index] == "B", "Balance Sheet", "Unknown accounttype"))
+    )
+    tb$accountKind[index] <- switch(lang,
+      "nl" = switch(substring(tb$accID[index], 1, 1),
+        "0" = "Vaste activa en passiva",
+        "1" = "Vlottende activa en passiva",
+        "2" = "Tussenrekening",
+        "3" = "Voorraadrekening",
+        "4" = "Kostenrekening",
+        "5" = NA,
+        "6" = NA,
+        "7" = "Kostpijs rekening",
+        "8" = "Omzet rekening",
+        "9" = "Financiële baten en lasten"
+      ),
+      "en" = switch(substring(tb$accID[index], 1, 1),
+        "0" = "Fixed assets and liabilities",
+        "1" = "Current assest and liabilities",
+        "2" = "Suspense account",
+        "3" = "Inventory account",
+        "4" = "Expense account",
+        "5" = NA,
+        "6" = NA,
+        "7" = "Cost account",
+        "8" = "Revenue account",
+        "9" = "Financial income and expenses"
+      )
     )
     index <- index + 1
   }
@@ -177,8 +204,11 @@
         Lead.Code = df$leadCode,
         Lead.Omschrijving = df$leadDescription,
         Soort = df$accountType,
+        Type = df$accountKind,
         Verwerkingsdatum = df$trDt
       )
+      result <- result[order(result$Periode, result$Datum), ]
+      rownames(result) <- seq_len(nrow(result))
       attr(result, "Bestandsnaam") <- unique(df$file)
       attr(result, "Datum") <- unique(df$dateCreated)
       attr(result, "Bedrijfsnaam") <- unique(df$companyName)
@@ -212,8 +242,11 @@
         Lead.Code = df$leadCode,
         Lead.Description = df$leadDescription,
         Type = df$accountType,
+        Kind = df$accountKind,
         Effective.Date = df$trDt
       )
+      result <- result[order(result$Period, result$Date), ]
+      rownames(result) <- seq_len(nrow(result))
       attr(result, "File") <- unique(df$file)
       attr(result, "Date") <- unique(df$dateCreated)
       attr(result, "Company") <- unique(df$companyName)

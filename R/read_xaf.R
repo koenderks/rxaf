@@ -23,15 +23,13 @@
 #'   file,
 #'   progress = interactive(),
 #'   clean = TRUE,
-#'   lang = c("nl", "en"),
-#'   version = 3
+#'   lang = c("nl", "en")
 #' )
 #'
 #' @param file      a string specifying the path to the XAF file to be read.
 #' @param progress  logical. Whether to show a progress bar.
 #' @param clean     logical. Whether to clean data before return.
 #' @param lang      character. Language of the added text and column names.
-#' @param version   integer. XAF version (currently only version 3 is supported).
 #'
 #' @return A data frame containing the parsed data from the XAF file.
 #'
@@ -53,13 +51,21 @@
 read.xaf <- function(file,
                      progress = interactive(),
                      clean = TRUE,
-                     lang = c("nl", "en"),
-                     version = 3) {
+                     lang = c("nl", "en")) {
   lang <- match.arg(lang)
   stopifnot("'clean' must be logical (TRUE or FALSE)" = is.logical(clean))
-  stopifnot("currently only XAF version 3 is supported" = version == 3)
-  stopifnot("'file' is not a .xaf file" = endsWith(file, ".xaf"))
-  doc <- xml2::as_list(xml2::read_xml(file))
+  stopifnot("'file' does not have the .xaf extension" = endsWith(file, ".xaf"))
+  flatfile <- xml2::read_xml(file)
+  stopifnot("'file' is not an XML Auditfile" = tolower(xml2::xml_name(flatfile)) == "auditfile")
+  namespace <- xml2::xml_ns(flatfile)
+  if (tolower(namespace[[1]]) == "http://www.auditfiles.nl/xaf/3.2") {
+    version <- "3.2"
+  } else if (tolower(namespace[[1]]) == "http://www.auditfiles.nl/xaf/3.1") {
+    version <- "3.1"
+  } else {
+    stop(paste0("XML Auditfile version ", namespace[[1]], "is currently not supported"))
+  }
+  doc <- xml2::as_list(flatfile)
   header <- doc$auditfile$header
   company <- doc$auditfile$company
   transactions <- company$transactions
@@ -160,6 +166,7 @@ read.xaf <- function(file,
   df$leadDescription <- accounts$leadDescription[match(df$accID, accounts$accID)]
   df$leadReference <- accounts$leadReference[match(df$accID, accounts$accID)]
   df$accountType <- accounts$accountType[match(df$accID, accounts$accID)]
+  df$accountKind <- accounts$accountKind[match(df$accID, accounts$accID)]
   # Journals
   journals <- .construct_journal_index(company, lang)
   df$jrn_jrnID <- journals$jrnID[match(df$jrnID, journals$jrnID)]
