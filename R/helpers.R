@@ -178,6 +178,152 @@
   return(tb)
 }
 
+.construct_mutations <- function(transactions, progress) {
+  size <- as.numeric(transactions$linesCount[[1]])
+  if (progress) {
+    pb <- utils::txtProgressBar(min = 0, max = size, initial = 0, width = 80, style = 3)
+  }
+  # Extract all tags from journals
+  rows <- vector("list", size)
+  index <- 1
+  entries <- transactions[which(names(transactions) == "journal")]
+  for (i in seq_along(entries)) {
+    journal <- entries[i]$journal
+    journal[lengths(journal) == 0] <- NA
+    transaction_indices <- which(names(journal) == "transaction")
+    non_transaction_indices <- which(names(journal) != "transaction")
+    records <- journal[transaction_indices]
+    row_part1 <- data.frame(journal[non_transaction_indices])
+    colnames(row_part1) <- names(unlist(journal[non_transaction_indices]))
+    row <- row_part1
+    for (j in seq_along(records)) {
+      record <- records[j]$transaction
+      record[lengths(record) == 0] <- NA
+      trLine_indices <- which(names(record) == "trLine")
+      non_trLine_indices <- which(names(record) != "trLine")
+      subfields <- record[trLine_indices]
+      row_part2 <- data.frame(record[non_trLine_indices])
+      colnames(row_part2) <- names(unlist(record[non_trLine_indices]))
+      common_cols <- intersect(colnames(row_part1), colnames(row_part2))
+      row_part1 <- row_part1[, !(names(row_part1) %in% common_cols)]
+      row <- cbind(row_part1, row_part2)
+      for (k in seq_along(subfields)) {
+        subfield <- subfields[k]$trLine
+        subfield[lengths(subfield) == 0] <- NA
+        vat_indices <- which(names(subfield) == "vat")
+        non_vat_indices <- which(names(subfield) != "vat")
+        row_part3 <- data.frame(subfield[non_vat_indices])
+        colnames(row_part3) <- names(subfield[non_vat_indices])
+        if (length(vat_indices) > 0) {
+          subfields1 <- subfield[vat_indices]
+          subfields1[lengths(subfields1) == 0] <- NA
+          vat <- data.frame(subfields1$vat)
+          colnames(vat) <- names(subfields1$vat)
+          row_part3 <- cbind(row_part3, vat)
+        }
+        common_cols <- intersect(colnames(row), colnames(row_part3))
+        row <- row[, !(names(row) %in% common_cols)]
+        row <- cbind(row, row_part3)
+        row[["desc"]] <- if (is.null(row_part3[["desc"]])) NA else row_part3[["desc"]] # Always take description from the transaction, even if missing
+        rows[[index]] <- row
+        if (progress) {
+          utils::setTxtProgressBar(pb, index)
+        }
+        index <- index + 1
+      }
+    }
+  }
+  suppressMessages({
+    df <- dplyr::bind_rows(rows)
+  })
+  return(df)
+}
+
+.add_raw_amounts <- function(df) {
+  df$amount <- ifelse(df$amntTp == "D", as.numeric(df$amnt), -as.numeric(df$amnt))
+  df <- df[, -which(colnames(df) %in% c("amntTp", "amnt"))]
+  df$debet <- ifelse(df$amount > 0, df$amount, NA)
+  df$credit <- ifelse(df$amount < 0, abs(df$amount), NA)
+  return(df)
+}
+
+.add_raw_vats <- function(df, vats) {
+  if ("vatID" %in% colnames(df)) {
+    df$vatDesc <- vats$vatDesc[match(df$vatID, vats$vatID)]
+    df$vat_amount <- ifelse(is.na(df$vatAmntTp), NA, ifelse(df$vatAmntTp == "D", as.numeric(df$vatAmnt), -as.numeric(df$vatAmnt)))
+    df$vatToClaimAccID <- vats$vatToClaimAccID[match(df$vatID, vats$vatID)]
+    df$vatToPayAccID <- vats$vatToPayAccID[match(df$vatID, vats$vatID)]
+    df <- df[, -which(colnames(df) %in% c("vatAmntTp", "vatAmnt"))]
+  }
+  return(df)
+}
+
+.add_raw_relations <- function(df, suppliers) {
+  if ("custSupID" %in% colnames(df)) {
+    df$cs_custSupName <- suppliers$custSupName[match(df$custSupID, suppliers$custSupID)]
+    df$cs_taxRegistrationCountry <- suppliers$taxRegistrationCountry[match(df$custSupID, suppliers$custSupID)]
+    df$cs_custSupTp <- suppliers$custSupTp[match(df$custSupID, suppliers$custSupID)]
+    df$cs_country <- suppliers$country[match(df$custSupID, suppliers$custSupID)]
+    df$cs_website <- suppliers$website[match(df$custSupID, suppliers$custSupID)]
+    df$cs_city <- suppliers$city[match(df$custSupID, suppliers$custSupID)]
+    df$cs_bankAccNr <- suppliers$bankAccNr[match(df$custSupID, suppliers$custSupID)]
+    df$cs_bankIdCd <- suppliers$bankIdCd[match(df$custSupID, suppliers$custSupID)]
+    df$cs_telephone <- suppliers$telephone[match(df$custSupID, suppliers$custSupID)]
+    df$cs_commerceNr <- suppliers$commerceNr[match(df$custSupID, suppliers$custSupID)]
+    df$cs_streetname <- suppliers$streetName[match(df$custSupID, suppliers$custSupID)]
+    df$cs_postalCode <- suppliers$postalCode[match(df$custSupID, suppliers$custSupID)]
+    df$cs_fax <- suppliers$fax[match(df$custSupID, suppliers$custSupID)]
+    df$cs_eMail <- suppliers$email[match(df$custSupID, suppliers$custSupID)]
+    df$cs_taxRegIdent <- suppliers$taxRegIdent[match(df$custSupID, suppliers$custSupID)]
+    df$cs_contact <- suppliers$contact[match(df$custSupID, suppliers$custSupID)]
+  }
+  return(df)
+}
+
+.add_raw_accounts <- function(df, accounts) {
+  df$accDesc <- accounts$accDesc[match(df$accID, accounts$accID)]
+  df$accTp <- accounts$accTp[match(df$accID, accounts$accID)]
+  df$leadCode <- accounts$leadCode[match(df$accID, accounts$accID)]
+  df$leadDescription <- accounts$leadDescription[match(df$accID, accounts$accID)]
+  df$leadReference <- accounts$leadReference[match(df$accID, accounts$accID)]
+  df$accountType <- accounts$accountType[match(df$accID, accounts$accID)]
+  df$accountKind <- accounts$accountKind[match(df$accID, accounts$accID)]
+  return(df)
+}
+
+.add_raw_journals <- function(df, journals) {
+  df$jrn_jrnID <- journals$jrnID[match(df$jrnID, journals$jrnID)]
+  df$jrn_desc <- journals$jrnDesc[match(df$jrnID, journals$jrnID)]
+  df$jrn_offsetAccID <- journals$offsetAccID[match(df$jrnID, journals$jrnID)]
+  df$jrn_bankAccNr <- journals$bankAccNr[match(df$jrnID, journals$jrnID)]
+  df$jrn_journaltype <- journals$journalType[match(df$jrnID, journals$jrnID)]
+  return(df)
+}
+
+.add_raw_info <- function(df, file, header, company, transactions) {
+  df$file <- basename(file)
+  df$fiscalYear <- header$fiscalYear[[1]]
+  df$startDate <- header$startDate[[1]]
+  df$endDate <- header$endDate[[1]]
+  df$curCode <- header$curCode[[1]]
+  df$dateCreated <- header$dateCreated[[1]]
+  df$softwareDesc <- header$softwareDesc[[1]]
+  df$companyIdent <- company$companyIdent[[1]]
+  df$companyName <- company$companyName[[1]]
+  df$taxRegistrationCountry <- company$taxRegistrationCountry[[1]]
+  df$taxRegIdent <- if (length(company$taxRegIdent) > 0) company$taxRegIdent[[1]] else NA
+  df$linesCount <- as.numeric(transactions$linesCount[[1]])
+  df$totalDebit <- as.numeric(transactions$totalDebit[[1]])
+  df$totalCredit <- as.numeric(transactions$totalCredit[[1]])
+  df$effMonth <- match(months(as.Date(df$effDate)), month.name)
+  df$account <- paste0(df$accID, " - ", df$accDesc)
+  df$journal <- paste0(df$jrnID, " - ", df$jrn_journaltype)
+  df$trDt <- as.Date(df$trDt)
+  df$periodNumber <- as.numeric(df$periodNumber)
+  df$effDate <- as.Date(df$effDate)
+  return(df)
+}
+
 .clean_xaf <- function(df, clean, lang) {
   if (!clean) {
     result <- df

@@ -11,7 +11,7 @@ test_that(desc = "osFinancials", {
   expect_equal(nrow(result), 10)
   expect_equal(ncol(result), 22)
   sub <- xaf_subtables(result)
-  expect_equal(length(sub), 3)
+  expect_equal(length(sub), 4)
 })
 
 test_that(desc = "AFAS", {
