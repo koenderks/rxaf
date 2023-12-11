@@ -1,4 +1,4 @@
-# rxaf: Read and Analyze Dutch XML Audit Files <img src='https://github.com/koenderks/rxaf/raw/master/logo.png' width='150' height='150' align='right'/>
+# rxaf: Read and Analyze Dutch XML Audit Files <img src='https://github.com/koenderks/rxaf/raw/master/man/figures/logo.png' width='150' height='150' align='right'/>
 
 The `rxaf` package provides functionality in R for reading and analyzing Dutch XML Audit Files (XAF), which are used in the Netherlands for financial and auditing purposes.
 
@@ -19,7 +19,7 @@ Here is a minimal working example of how to use `rxaf` to read a XAF file and wr
 library(rxaf)
 
 # Replace 'example.xaf' with the path to the .xaf file you want to read
-dataset <- read.xaf("example.xaf")
+dataset <- read_xaf("example.xaf")
 
 # The imported XAF file can be exported to CSV
 write.csv(dataset, "example.csv", row.names = FALSE)

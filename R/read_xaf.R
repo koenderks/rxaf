@@ -19,7 +19,7 @@
 #'   which are commonly used in the Netherlands for financial and auditing
 #'   purposes.
 #'
-#' @usage read.xaf(
+#' @usage read_xaf(
 #'   file,
 #'   progress = interactive(),
 #'   clean = TRUE,
@@ -42,13 +42,12 @@
 #'
 #' @examples
 #' \dontrun{
-#' df <- read.xaf("path/to/xaf/file.xaf")
+#' df <- read_xaf("path/to/xaf/file.xaf")
 #' head(df)
-#' attributes(df)$Journals
 #' }
 #' @export
 
-read.xaf <- function(file,
+read_xaf <- function(file,
                      progress = interactive(),
                      clean = TRUE,
                      lang = c("nl", "en")) {
@@ -58,12 +57,16 @@ read.xaf <- function(file,
   flatfile <- xml2::read_xml(file)
   stopifnot("'file' is not an XML Auditfile" = tolower(xml2::xml_name(flatfile)) == "auditfile")
   namespace <- xml2::xml_ns(flatfile)
-  if (tolower(namespace[[1]]) == "http://www.auditfiles.nl/xaf/3.2") {
-    version <- "3.2"
-  } else if (tolower(namespace[[1]]) == "http://www.auditfiles.nl/xaf/3.1") {
-    version <- "3.1"
+  if (length(namespace) > 0) {
+    if (tolower(namespace[[1]]) == "http://www.auditfiles.nl/xaf/3.2") {
+      version <- "3.2"
+    } else if (tolower(namespace[[1]]) == "http://www.auditfiles.nl/xaf/3.1") {
+      version <- "3.1"
+    } else {
+      stop(paste0("XML Auditfile version ", namespace[[1]], "is currently not supported"))
+    }
   } else {
-    stop(paste0("XML Auditfile version ", namespace[[1]], "is currently not supported"))
+    stop("'file' does not have an identifiable namespace")
   }
   doc <- xml2::as_list(flatfile)
   header <- doc$auditfile$header
@@ -123,7 +126,9 @@ read.xaf <- function(file,
       }
     }
   }
-  df <- dplyr::bind_rows(rows)
+  suppressMessages({
+    df <- dplyr::bind_rows(rows)
+  })
   # Amounts
   df$amount <- ifelse(df$amntTp == "D", as.numeric(df$amnt), -as.numeric(df$amnt))
   df <- df[, -which(colnames(df) %in% c("amntTp", "amnt"))]
@@ -193,10 +198,8 @@ read.xaf <- function(file,
   df$account <- paste0(df$accID, " - ", df$accDesc)
   df$journal <- paste0(df$jrnID, " - ", df$jrn_journaltype)
   # Formatting
-  df$jrnID <- as.numeric(df$jrnID)
   df$trDt <- as.Date(df$trDt)
   df$periodNumber <- as.numeric(df$periodNumber)
-  df$accID <- as.numeric(df$accID)
   df$effDate <- as.Date(df$effDate)
   # Cleaning
   result <- .clean_xaf(df, clean, lang)
@@ -205,7 +208,7 @@ read.xaf <- function(file,
   }
   attrNames <- switch(lang,
     "nl" = c("Dagboeken", "Grootboeken", "BTW.Codes", "Relaties"),
-    "en" = c("Journals", "Accounts", "VAT.Codes", "Customer.Supplier")
+    "en" = c("Journals", "Accounts", "VAT.Codes", "Relations")
   )
   attr(result, "lang") <- lang
   attr(result, "clean") <- clean
@@ -217,5 +220,6 @@ read.xaf <- function(file,
   if ("custSupID" %in% colnames(df)) {
     attr(result, attrNames[4]) <- suppliers
   }
+  class(result) <- c(class(result), "xaf")
   return(result)
 }

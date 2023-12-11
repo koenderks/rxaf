@@ -11,7 +11,7 @@
   for (i in indices) {
     vatCode <- company$vatCodes[i]$vatCode
     tb$vatID[index] <- vatCode$vatID[[1]]
-    tb$vatDesc[index] <- vatCode$vatDesc[[1]]
+    tb$vatDesc[index] <- if (length(vatCode$vatDesc) > 0) vatCode$vatDesc[[1]] else NA
     tb$vatToClaimAccID[index] <- if (length(vatCode$vatToClaimAccID) > 0) vatCode$vatToClaimAccID[[1]] else NA
     tb$vatToPayAccID[index] <- if (length(vatCode$vatToPayAccID) > 0) vatCode$vatToPayAccID[[1]] else NA
     index <- index + 1
@@ -47,11 +47,11 @@
   for (i in indices) {
     customerSupplier <- company$customersSuppliers[i]$customerSupplier
     tb$custSupID[index] <- customerSupplier$custSupID[[1]]
-    tb$custSupName[index] <- customerSupplier$custSupName[[1]]
+    tb$custSupName[index] <- if (length(customerSupplier$custSupName) > 0) customerSupplier$custSupName[[1]] else NA
     tb$commerceNr[index] <- if (length(customerSupplier$commerceNr) > 0) customerSupplier$commerceNr[[1]] else NA
     tb$taxRegistrationCountry[index] <- if (length(customerSupplier$taxRegistrationCountry) > 0) customerSupplier$taxRegistrationCountry[[1]] else NA
     tb$taxRegIdent[index] <- if (length(customerSupplier$taxRegIdent) > 0) customerSupplier$taxRegIdent[[1]] else NA
-    tb$custSupTp[index] <- customerSupplier$custSupTp[[1]]
+    tb$custSupTp[index] <- if (length(customerSupplier$custSupTp) > 0) customerSupplier$custSupTp[[1]] else NA
     tb$streetName[index] <- if (length(customerSupplier$streetAddress$streetname) > 0) customerSupplier$streetAddress$streetname[[1]] else NA
     tb$country[index] <- if (length(customerSupplier$streetAddress$country) > 0) customerSupplier$streetAddress$country[[1]] else NA
     tb$city[index] <- if (length(customerSupplier$streetAddress$city) > 0) customerSupplier$streetAddress$city[[1]] else NA
@@ -107,7 +107,7 @@
         "6" = NA,
         "7" = "Kostpijs rekening",
         "8" = "Omzet rekening",
-        "9" = "Financiële baten en lasten"
+        "9" = "Financiele baten en lasten"
       ),
       "en" = switch(substring(tb$accID[index], 1, 1),
         "0" = "Fixed assets and liabilities",
@@ -236,8 +236,8 @@
         VAT.Code = if ("vatID" %in% colnames(df)) df$vatID else NA,
         VAT.Description = if ("vatID" %in% colnames(df)) df$vatDesc else NA,
         VAT.Amount = if ("vatID" %in% colnames(df)) df$vat_amount else NA,
-        Customer.Supplier.ID = if ("custSupID" %in% colnames(df)) df$custSupID else NA,
-        Customer.Supplier = if ("custSupID" %in% colnames(df)) df$cs_custSupName else NA,
+        RelationID = if ("custSupID" %in% colnames(df)) df$custSupID else NA,
+        Relation = if ("custSupID" %in% colnames(df)) df$cs_custSupName else NA,
         Number = df$nr,
         Lead.Code = df$leadCode,
         Lead.Description = df$leadDescription,
