@@ -9,21 +9,15 @@
 .construct_vats_index <- function(company) {
   indices <- which(names(company$vatCodes) == "vatCode")
   n <- length(indices)
-  tb <- data.frame(
-    vatID = character(n),
-    vatDesc = character(n),
-    vatToClaimAccID = character(n),
-    vatToPayAccID = character(n)
-  )
-  index <- 1
-  for (i in indices) {
-    vatCode <- company$vatCodes[i]$vatCode
-    tb$vatID[index] <- .xafvalue(vatCode$vatID)
-    tb$vatDesc[index] <- .xafvalue(vatCode$vatDesc)
-    tb$vatToClaimAccID[index] <- .xafvalue(vatCode$vatToClaimAccID)
-    tb$vatToPayAccID[index] <- .xafvalue(vatCode$vatToPayAccID)
-    index <- index + 1
-  }
+  vatCodes <- company$vatCodes[indices]
+  tb <- do.call(rbind, lapply(vatCodes, function(vatCode) {
+    data.frame(
+      vatID = .xafvalue(vatCode$vatID),
+      vatDesc = .xafvalue(vatCode$vatDesc),
+      vatToClaimAccID = .xafvalue(vatCode$vatToClaimAccID),
+      vatToPayAccID = .xafvalue(vatCode$vatToPayAccID)
+    )
+  }))
   tb <- tb[order(tb$vatID), ]
   rownames(tb) <- seq_len(nrow(tb))
   return(tb)
@@ -32,47 +26,28 @@
 .construct_custsup_index <- function(company) {
   indices <- which(names(company$customersSuppliers) == "customerSupplier")
   n <- length(indices)
-  tb <- data.frame(
-    custSupID = character(n),
-    custSupName = character(n),
-    commerceNr = character(n),
-    taxRegistrationCountry = character(n),
-    custSupTp = character(n),
-    streetName = character(n),
-    country = character(n),
-    city = character(n),
-    postalCode = character(n),
-    telephone = character(n),
-    website = character(n),
-    contact = character(n),
-    fax = character(n),
-    taxRegIdent = character(n),
-    email = character(n),
-    bankAccNr = character(n),
-    bankIdCd = character(n)
-  )
-  index <- 1
-  for (i in indices) {
-    customerSupplier <- company$customersSuppliers[i]$customerSupplier
-    tb$custSupID[index] <- .xafvalue(customerSupplier$custSupID)
-    tb$custSupName[index] <- .xafvalue(customerSupplier$custSupName)
-    tb$commerceNr[index] <- .xafvalue(customerSupplier$commerceNr)
-    tb$taxRegistrationCountry[index] <- .xafvalue(customerSupplier$taxRegistrationCountry)
-    tb$taxRegIdent[index] <- .xafvalue(customerSupplier$taxRegIdent)
-    tb$custSupTp[index] <- .xafvalue(customerSupplier$custSupTp)
-    tb$streetName[index] <- .xafvalue(customerSupplier$streetAddress$streetname)
-    tb$country[index] <- .xafvalue(customerSupplier$streetAddress$country)
-    tb$city[index] <- .xafvalue(customerSupplier$streetAddress$city)
-    tb$postalCode[index] <- .xafvalue(customerSupplier$streetAddress$postalCode)
-    tb$telephone[index] <- .xafvalue(customerSupplier$telephone)
-    tb$website[index] <- .xafvalue(customerSupplier$website)
-    tb$contact[index] <- .xafvalue(customerSupplier$contact)
-    tb$fax[index] <- .xafvalue(customerSupplier$fax)
-    tb$email[index] <- .xafvalue(customerSupplier$eMail)
-    tb$bankAccNr[index] <- .xafvalue(customerSupplier$bankAccount$bankAccNr)
-    tb$bankIdCd[index] <- .xafvalue(customerSupplier$bankAccount$bankIdCd)
-    index <- index + 1
-  }
+  customersSuppliers <- company$customersSuppliers[indices]
+  tb <- do.call(rbind, lapply(customersSuppliers, function(customerSupplier) {
+    data.frame(
+      custSupID = .xafvalue(customerSupplier$custSupID),
+      custSupName = .xafvalue(customerSupplier$custSupName),
+      commerceNr = .xafvalue(customerSupplier$commerceNr),
+      taxRegistrationCountry = .xafvalue(customerSupplier$taxRegistrationCountry),
+      custSupTp = .xafvalue(customerSupplier$custSupTp),
+      streetName = .xafvalue(customerSupplier$streetAddress$streetname),
+      country = .xafvalue(customerSupplier$streetAddress$country),
+      city = .xafvalue(customerSupplier$streetAddress$city),
+      postalCode = .xafvalue(customerSupplier$streetAddress$postalCode),
+      telephone = .xafvalue(customerSupplier$telephone),
+      website = .xafvalue(customerSupplier$website),
+      contact = .xafvalue(customerSupplier$contact),
+      fax = .xafvalue(customerSupplier$fax),
+      taxRegIdent = .xafvalue(customerSupplier$taxRegIdent),
+      email = .xafvalue(customerSupplier$eMail),
+      bankAccNr = .xafvalue(customerSupplier$bankAccount$bankAccNr),
+      bankIdCd = .xafvalue(customerSupplier$bankAccount$bankIdCd)
+    )
+  }))
   tb <- tb[order(tb$custSupID), ]
   rownames(tb) <- seq_len(nrow(tb))
   return(tb)
@@ -81,57 +56,49 @@
 .construct_account_index <- function(company, lang) {
   indices <- which(names(company$generalLedger) == "ledgerAccount")
   n <- length(indices)
-  tb <- data.frame(
-    accID = character(n),
-    accDesc = character(n),
-    accTp = character(n),
-    leadCode = character(n),
-    leadDescription = character(n),
-    leadReference = character(n),
-    accountType = character(n),
-    accountKind = character(n)
-  )
-  index <- 1
-  for (i in indices) {
-    ledgerAccount <- company$generalLedger[i]$ledgerAccount
-    tb$accID[index] <- .xafvalue(ledgerAccount$accID)
-    tb$accDesc[index] <- .xafvalue(ledgerAccount$accDesc)
-    tb$accTp[index] <- .xafvalue(ledgerAccount$accTp)
-    tb$leadCode[index] <- .xafvalue(ledgerAccount$leadCode)
-    tb$leadDescription[index] <- .xafvalue(ledgerAccount$leadDescription)
-    tb$leadReference[index] <- .xafvalue(ledgerAccount$leadReference)
-    tb$accountType[index] <- switch(lang,
-      "nl" = ifelse(tb$accTp[index] == "P", "Winst & Verlies", ifelse(tb$accTp[index] == "B", "Balans", "Onbekend balanstype")),
-      "en" = ifelse(tb$accTp[index] == "P", "Profit & Loss", ifelse(tb$accTp[index] == "B", "Balance Sheet", "Unknown accounttype"))
-    )
-    tb$accountKind[index] <- ifelse(!is.na(tb$accID[index]), switch(lang,
-      "nl" = switch(substring(tb$accID[index], 1, 1),
-        "0" = "Vaste activa en passiva",
-        "1" = "Vlottende activa en passiva",
-        "2" = "Tussenrekening",
-        "3" = "Voorraadrekening",
-        "4" = "Kostenrekening",
-        "5" = NA,
-        "6" = NA,
-        "7" = "Kostpijs rekening",
-        "8" = "Omzet rekening",
-        "9" = "Financiele baten en lasten"
+  generalLedger <- company$generalLedger[indices]
+  tb <- do.call(rbind, lapply(generalLedger, function(ledgerAccount) {
+    accTp <- .xafvalue(ledgerAccount$accTp)
+    accID <- .xafvalue(ledgerAccount$accID)
+    data.frame(
+      accID = accID,
+      accDesc = .xafvalue(ledgerAccount$accDesc),
+      accTp = accTp,
+      leadCode = .xafvalue(ledgerAccount$leadCode),
+      leadDescription = .xafvalue(ledgerAccount$leadDescription),
+      leadReference = .xafvalue(ledgerAccount$leadReference),
+      accountType = switch(lang,
+        "nl" = ifelse(accTp == "P", "Winst & Verlies", ifelse(accTp == "B", "Balans", "Onbekend balanstype")),
+        "en" = ifelse(accTp == "P", "Profit & Loss", ifelse(accTp == "B", "Balance Sheet", "Unknown accounttype"))
       ),
-      "en" = switch(substring(tb$accID[index], 1, 1),
-        "0" = "Fixed assets and liabilities",
-        "1" = "Current assest and liabilities",
-        "2" = "Suspense account",
-        "3" = "Inventory account",
-        "4" = "Expense account",
-        "5" = NA,
-        "6" = NA,
-        "7" = "Cost account",
-        "8" = "Revenue account",
-        "9" = "Financial income and expenses"
-      )
-    ), NA)
-    index <- index + 1
-  }
+      accountKind = ifelse(!is.na(accID), switch(lang,
+        "nl" = switch(substring(accID, 1, 1),
+          "0" = "Vaste activa en passiva",
+          "1" = "Vlottende activa en passiva",
+          "2" = "Tussenrekening",
+          "3" = "Voorraadrekening",
+          "4" = "Kostenrekening",
+          "5" = NA,
+          "6" = NA,
+          "7" = "Kostpijs rekening",
+          "8" = "Omzet rekening",
+          "9" = "Financiele baten en lasten"
+        ),
+        "en" = switch(substring(accID, 1, 1),
+          "0" = "Fixed assets and liabilities",
+          "1" = "Current assest and liabilities",
+          "2" = "Suspense account",
+          "3" = "Inventory account",
+          "4" = "Expense account",
+          "5" = NA,
+          "6" = NA,
+          "7" = "Cost account",
+          "8" = "Revenue account",
+          "9" = "Financial income and expenses"
+        )
+      ), NA)
+    )
+  }))
   tb <- tb[order(tb$accID), ]
   rownames(tb) <- seq_len(nrow(tb))
   return(tb)
@@ -140,49 +107,43 @@
 .construct_journal_index <- function(company, lang) {
   indices <- which(names(company$transactions) == "journal")
   n <- length(indices)
-  tb <- data.frame(
-    jrnID = character(n),
-    jrnDesc = character(n),
-    jrnTp = character(n),
-    offsetAccID = character(n),
-    bankAccNr = character(n),
-    journalType = character(n)
-  )
-  index <- 1
-  for (i in indices) {
-    journal <- company$transactions[i]$journal
-    tb$jrnID[index] <- .xafvalue(journal$jrnID)
-    tb$jrnDesc[index] <- .xafvalue(journal$desc)
-    tb$jrnTp[index] <- .xafvalue(journal$jrnTp)
-    tb$offsetAccID[index] <- .xafvalue(journal$offsetAccID)
-    tb$bankAccNr[index] <- .xafvalue(journal$bankAccNr)
-    if (!is.na(tb$jrnTp[index])) {
-      if (lang == "nl") {
-        tb$journalType[index] <- ifelse(tb$jrnTp[index] %in% c("Z", "B", "P", "O", "C", "M", "Y", "S"), switch(tb$jrnTp[index],
-          "Z" = "Memoriaal",
-          "B" = "Bankboek",
-          "P" = "Inkoopboek",
-          "O" = "Open/Sluit balans",
-          "C" = "Kasboek",
-          "M" = "Memoriaal",
-          "Y" = "Salaris",
-          "S" = "Verkoopboek"
-        ), "Onbekend dagboek")
-      } else {
-        tb$journalType[index] <- ifelse(tb$jrnTp[index] %in% c("Z", "B", "P", "O", "C", "M", "Y", "S"), switch(tb$jrnTp[index],
-          "Z" = "Memorial",
-          "B" = "Bank book",
-          "P" = "Purchase book",
-          "O" = "Open/Close balance",
-          "C" = "Cash book",
-          "M" = "Memorial",
-          "Y" = "Salary",
-          "S" = "Sales book"
-        ), "Unknown journal")
+  transactions <- company$transactions[indices]
+  tb <- do.call(rbind, lapply(transactions, function(transaction) {
+    jrnTp <- .xafvalue(transaction$jrnTp)
+    jrnID <- .xafvalue(transaction$jrnID)
+    data.frame(
+      jrnID = jrnID,
+      jrnDesc = .xafvalue(transaction$desc),
+      jrnTp = jrnTp,
+      offsetAccID = .xafvalue(transaction$offsetAccID),
+      bankAccNr = .xafvalue(transaction$bankAccNr),
+      journalType = if (!is.na(jrnTp)) {
+        if (lang == "nl") {
+          ifelse(jrnTp %in% c("Z", "B", "P", "O", "C", "M", "Y", "S"), switch(jrnTp,
+            "Z" = "Memoriaal",
+            "B" = "Bankboek",
+            "P" = "Inkoopboek",
+            "O" = "Open/Sluit balans",
+            "C" = "Kasboek",
+            "M" = "Memoriaal",
+            "Y" = "Salaris",
+            "S" = "Verkoopboek"
+          ), "Onbekend dagboek")
+        } else {
+          ifelse(jrnTp %in% c("Z", "B", "P", "O", "C", "M", "Y", "S"), switch(jrnTp,
+            "Z" = "Memorial",
+            "B" = "Bank book",
+            "P" = "Purchase book",
+            "O" = "Open/Close balance",
+            "C" = "Cash book",
+            "M" = "Memorial",
+            "Y" = "Salary",
+            "S" = "Sales book"
+          ), "Unknown journal")
+        }
       }
-    }
-    index <- index + 1
-  }
+    )
+  }))
   tb <- tb[order(tb$jrnID), ]
   rownames(tb) <- seq_len(nrow(tb))
   return(tb)
@@ -250,63 +211,70 @@
 }
 
 .add_raw_amounts <- function(df) {
-  df$amount <- ifelse(df$amntTp == "D", as.numeric(df$amnt), -as.numeric(df$amnt))
-  df <- df[, -which(colnames(df) %in% c("amntTp", "amnt"))]
-  df$debet <- ifelse(df$amount > 0, df$amount, NA)
-  df$credit <- ifelse(df$amount < 0, abs(df$amount), NA)
+  df$amount <- as.numeric(df$amnt)
+  df$amount[df$amntTp != "D"] <- -df$amount[df$amntTp != "D"]
+  df <- df[, !colnames(df) %in% c("amntTp", "amnt")]
+  df$debet <- df$amount
+  df$debet[df$debet < 0] <- NA
+  df$credit <- -df$amount
+  df$credit[df$credit < 0] <- NA
   return(df)
 }
 
 .add_raw_vats <- function(df, vats) {
   if ("vatID" %in% colnames(df)) {
-    df$vatDesc <- vats$vatDesc[match(df$vatID, vats$vatID)]
+    matched_vats <- vats[match(df$vatID, vats$vatID), ]
+    df$vatDesc <- matched_vats$vatDesc
     df$vat_amount <- ifelse(is.na(df$vatAmntTp), NA, ifelse(df$vatAmntTp == "D", as.numeric(df$vatAmnt), -as.numeric(df$vatAmnt)))
-    df$vatToClaimAccID <- vats$vatToClaimAccID[match(df$vatID, vats$vatID)]
-    df$vatToPayAccID <- vats$vatToPayAccID[match(df$vatID, vats$vatID)]
-    df <- df[, -which(colnames(df) %in% c("vatAmntTp", "vatAmnt"))]
+    df$vatToClaimAccID <- matched_vats$vatToClaimAccID
+    df$vatToPayAccID <- matched_vats$vatToPayAccID
+    df <- df[, !colnames(df) %in% c("vatAmntTp", "vatAmnt")]
   }
   return(df)
 }
 
 .add_raw_relations <- function(df, suppliers) {
   if ("custSupID" %in% colnames(df)) {
-    df$cs_custSupName <- suppliers$custSupName[match(df$custSupID, suppliers$custSupID)]
-    df$cs_taxRegistrationCountry <- suppliers$taxRegistrationCountry[match(df$custSupID, suppliers$custSupID)]
-    df$cs_custSupTp <- suppliers$custSupTp[match(df$custSupID, suppliers$custSupID)]
-    df$cs_country <- suppliers$country[match(df$custSupID, suppliers$custSupID)]
-    df$cs_website <- suppliers$website[match(df$custSupID, suppliers$custSupID)]
-    df$cs_city <- suppliers$city[match(df$custSupID, suppliers$custSupID)]
-    df$cs_bankAccNr <- suppliers$bankAccNr[match(df$custSupID, suppliers$custSupID)]
-    df$cs_bankIdCd <- suppliers$bankIdCd[match(df$custSupID, suppliers$custSupID)]
-    df$cs_telephone <- suppliers$telephone[match(df$custSupID, suppliers$custSupID)]
-    df$cs_commerceNr <- suppliers$commerceNr[match(df$custSupID, suppliers$custSupID)]
-    df$cs_streetname <- suppliers$streetName[match(df$custSupID, suppliers$custSupID)]
-    df$cs_postalCode <- suppliers$postalCode[match(df$custSupID, suppliers$custSupID)]
-    df$cs_fax <- suppliers$fax[match(df$custSupID, suppliers$custSupID)]
-    df$cs_eMail <- suppliers$email[match(df$custSupID, suppliers$custSupID)]
-    df$cs_taxRegIdent <- suppliers$taxRegIdent[match(df$custSupID, suppliers$custSupID)]
-    df$cs_contact <- suppliers$contact[match(df$custSupID, suppliers$custSupID)]
+    matched_suppliers <- suppliers[match(df$custSupID, suppliers$custSupID), ]
+    df$cs_custSupName <- matched_suppliers$custSupName
+    df$cs_taxRegistrationCountry <- matched_suppliers$taxRegistrationCountry
+    df$cs_custSupTp <- matched_suppliers$custSupTp
+    df$cs_country <- matched_suppliers$country
+    df$cs_website <- matched_suppliers$website
+    df$cs_city <- matched_suppliers$city
+    df$cs_bankAccNr <- matched_suppliers$bankAccNr
+    df$cs_bankIdCd <- matched_suppliers$bankIdCd
+    df$cs_telephone <- matched_suppliers$telephone
+    df$cs_commerceNr <- matched_suppliers$commerceNr
+    df$cs_streetname <- matched_suppliers$streetName
+    df$cs_postalCode <- matched_suppliers$postalCode
+    df$cs_fax <- matched_suppliers$fax
+    df$cs_eMail <- matched_suppliers$email
+    df$cs_taxRegIdent <- matched_suppliers$taxRegIdent
+    df$cs_contact <- matched_suppliers$contact
   }
   return(df)
 }
 
 .add_raw_accounts <- function(df, accounts) {
-  df$accDesc <- accounts$accDesc[match(df$accID, accounts$accID)]
-  df$accTp <- accounts$accTp[match(df$accID, accounts$accID)]
-  df$leadCode <- accounts$leadCode[match(df$accID, accounts$accID)]
-  df$leadDescription <- accounts$leadDescription[match(df$accID, accounts$accID)]
-  df$leadReference <- accounts$leadReference[match(df$accID, accounts$accID)]
-  df$accountType <- accounts$accountType[match(df$accID, accounts$accID)]
-  df$accountKind <- accounts$accountKind[match(df$accID, accounts$accID)]
+  matched_accounts <- accounts[match(df$accID, accounts$accID), ]
+  df$accDesc <- matched_accounts$accDesc
+  df$accTp <- matched_accounts$accTp
+  df$leadCode <- matched_accounts$leadCode
+  df$leadDescription <- matched_accounts$leadDescription
+  df$leadReference <- matched_accounts$leadReference
+  df$accountType <- matched_accounts$accountType
+  df$accountKind <- matched_accounts$accountKind
   return(df)
 }
 
 .add_raw_journals <- function(df, journals) {
-  df$jrn_jrnID <- journals$jrnID[match(df$jrnID, journals$jrnID)]
-  df$jrn_desc <- journals$jrnDesc[match(df$jrnID, journals$jrnID)]
-  df$jrn_offsetAccID <- journals$offsetAccID[match(df$jrnID, journals$jrnID)]
-  df$jrn_bankAccNr <- journals$bankAccNr[match(df$jrnID, journals$jrnID)]
-  df$jrn_journaltype <- journals$journalType[match(df$jrnID, journals$jrnID)]
+  matched_journals <- journals[match(df$jrnID, journals$jrnID), ]
+  df$jrn_jrnID <- matched_journals$jrnID
+  df$jrn_desc <- matched_journals$jrnDesc
+  df$jrn_offsetAccID <- matched_journals$offsetAccID
+  df$jrn_bankAccNr <- matched_journals$bankAccNr
+  df$jrn_journaltype <- matched_journals$journalType
   return(df)
 }
 
