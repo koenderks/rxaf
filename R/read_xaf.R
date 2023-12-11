@@ -46,6 +46,7 @@
 #' \dontrun{
 #' df <- read.xaf("path/to/xaf/file.xaf")
 #' head(df)
+#' attributes(df)$Journals
 #' }
 #' @export
 
@@ -55,6 +56,7 @@ read.xaf <- function(file,
                      lang = c("nl", "en"),
                      version = 3) {
   lang <- match.arg(lang)
+  stopifnot("'clean' must be logical (TRUE or FALSE)" = is.logical(clean))
   stopifnot("currently only XAF version 3 is supported" = version == 3)
   stopifnot("'file' is not a .xaf file" = endsWith(file, ".xaf"))
   doc <- xml2::as_list(xml2::read_xml(file))
@@ -63,34 +65,42 @@ read.xaf <- function(file,
   transactions <- company$transactions
   size <- as.numeric(transactions$linesCount[[1]])
   if (progress) {
-    pb <- utils::txtProgressBar(min = 0, max = size, initial = 0, width = 80, style = 3)
+    pb <- utils::txtProgressBar(min = 0, max = size + 1, initial = 0, width = 80, style = 3)
   }
   # Extract all tags from journals
-  rows <- list()
+  rows <- vector("list", size)
+  index <- 1
   entries <- transactions[which(names(transactions) == "journal")]
   for (i in seq_along(entries)) {
     journal <- entries[i]$journal
     journal[lengths(journal) == 0] <- NA
-    records <- journal[which(names(journal) == "transaction")]
-    row_part1 <- data.frame(journal[which(names(journal) != "transaction")])
-    colnames(row_part1) <- names(unlist(journal[which(names(journal) != "transaction")]))
+    transaction_indices <- which(names(journal) == "transaction")
+    non_transaction_indices <- which(names(journal) != "transaction")
+    records <- journal[transaction_indices]
+    row_part1 <- data.frame(journal[non_transaction_indices])
+    colnames(row_part1) <- names(unlist(journal[non_transaction_indices]))
     row <- row_part1
     for (j in seq_along(records)) {
       record <- records[j]$transaction
       record[lengths(record) == 0] <- NA
-      subfields <- record[which(names(record) == "trLine")]
-      row_part2 <- data.frame(record[which(names(record) != "trLine")])
-      colnames(row_part2) <- names(unlist(record[which(names(record) != "trLine")]))
+      trLine_indices <- which(names(record) == "trLine")
+      non_trLine_indices <- which(names(record) != "trLine")
+      subfields <- record[trLine_indices]
+      row_part2 <- data.frame(record[non_trLine_indices])
+      colnames(row_part2) <- names(unlist(record[non_trLine_indices]))
       common_cols <- intersect(colnames(row_part1), colnames(row_part2))
       row_part1 <- row_part1[, !(names(row_part1) %in% common_cols)]
       row <- cbind(row_part1, row_part2)
       for (k in seq_along(subfields)) {
         subfield <- subfields[k]$trLine
         subfield[lengths(subfield) == 0] <- NA
-        subfields1 <- subfield[which(names(subfield) == "vat")]
-        row_part3 <- data.frame(subfield[which(names(subfield) != "vat")])
-        colnames(row_part3) <- names(subfield[which(names(subfield) != "vat")])
-        if (length(subfields1) > 0) {
+        vat_indices <- which(names(subfield) == "vat")
+        non_vat_indices <- which(names(subfield) != "vat")
+        row_part3 <- data.frame(subfield[non_vat_indices])
+        colnames(row_part3) <- names(subfield[non_vat_indices])
+        if (length(vat_indices) > 0) {
+          subfields1 <- subfield[vat_indices]
+          subfields1[lengths(subfields1) == 0] <- NA
           vat <- data.frame(subfields1$vat)
           colnames(vat) <- names(subfields1$vat)
           row_part3 <- cbind(row_part3, vat)
@@ -99,10 +109,11 @@ read.xaf <- function(file,
         row <- row[, !(names(row) %in% common_cols)]
         row <- cbind(row, row_part3)
         row[["desc"]] <- if (is.null(row_part3[["desc"]])) NA else row_part3[["desc"]] # Always take description from the transaction, even if missing
-        rows[[length(rows) + 1]] <- row
+        rows[[index]] <- row
         if (progress) {
-          utils::setTxtProgressBar(pb, length(rows))
+          utils::setTxtProgressBar(pb, index)
         }
+        index <- index + 1
       }
     }
   }
@@ -182,5 +193,22 @@ read.xaf <- function(file,
   df$effDate <- as.Date(df$effDate)
   # Cleaning
   result <- .clean_xaf(df, clean, lang)
+  if (progress) {
+    utils::setTxtProgressBar(pb, index)
+  }
+  attrNames <- switch(lang,
+    "nl" = c("Dagboeken", "Grootboeken", "BTW.Codes", "Relaties"),
+    "en" = c("Journals", "Accounts", "VAT.Codes", "Customer.Supplier")
+  )
+  attr(result, "lang") <- lang
+  attr(result, "clean") <- clean
+  attr(result, attrNames[1]) <- journals
+  attr(result, attrNames[2]) <- accounts
+  if ("vatID" %in% colnames(df)) {
+    attr(result, attrNames[3]) <- vats
+  }
+  if ("custSupID" %in% colnames(df)) {
+    attr(result, attrNames[4]) <- suppliers
+  }
   return(result)
 }

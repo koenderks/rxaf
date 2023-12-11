@@ -16,6 +16,8 @@
     tb$vatToPayAccID[index] <- if (length(vatCode$vatToPayAccID) > 0) vatCode$vatToPayAccID[[1]] else NA
     index <- index + 1
   }
+  tb <- tb[order(tb$vatID), ]
+  rownames(tb) <- seq_len(nrow(tb))
   return(tb)
 }
 
@@ -63,6 +65,8 @@
     tb$bankIdCd[index] <- if (length(customerSupplier$bankAccount$bankIdCd) > 0) customerSupplier$bankAccount$bankIdCd[[1]] else NA
     index <- index + 1
   }
+  tb <- tb[order(tb$custSupID), ]
+  rownames(tb) <- seq_len(nrow(tb))
   return(tb)
 }
 
@@ -93,6 +97,8 @@
     )
     index <- index + 1
   }
+  tb <- tb[order(tb$accID), ]
+  rownames(tb) <- seq_len(nrow(tb))
   return(tb)
 }
 
@@ -140,6 +146,8 @@
     }
     index <- index + 1
   }
+  tb <- tb[order(tb$jrnID), ]
+  rownames(tb) <- seq_len(nrow(tb))
   return(tb)
 }
 
@@ -163,11 +171,11 @@
         BTW.Code = if ("vatID" %in% colnames(df)) df$vatID else NA,
         BTW.Omschrijving = if ("vatID" %in% colnames(df)) df$vatDesc else NA,
         BTW.Saldo = if ("vatID" %in% colnames(df)) df$vat_amount else NA,
-        Debnr.Crednr = if ("custSupID" %in% colnames(df)) df$custSupID else NA,
-        Debnaam.Crednaam = if ("custSupID" %in% colnames(df)) df$cs_custSupName else NA,
-        Volgnr = df$nr,
-        LeadCode = df$leadCode,
-        LeadDescription = df$leadDescription,
+        Relatienummer = if ("custSupID" %in% colnames(df)) df$custSupID else NA,
+        Relatie = if ("custSupID" %in% colnames(df)) df$cs_custSupName else NA,
+        Volgnummer = df$nr,
+        Lead.Code = df$leadCode,
+        Lead.Omschrijving = df$leadDescription,
         Soort = df$accountType,
         Verwerkingsdatum = df$trDt
       )
@@ -198,13 +206,13 @@
         VAT.Code = if ("vatID" %in% colnames(df)) df$vatID else NA,
         VAT.Description = if ("vatID" %in% colnames(df)) df$vatDesc else NA,
         VAT.Amount = if ("vatID" %in% colnames(df)) df$vat_amount else NA,
-        CustomerSupplierID = if ("custSupID" %in% colnames(df)) df$custSupID else NA,
-        CustomerSupplierName = if ("custSupID" %in% colnames(df)) df$cs_custSupName else NA,
+        Customer.Supplier.ID = if ("custSupID" %in% colnames(df)) df$custSupID else NA,
+        Customer.Supplier = if ("custSupID" %in% colnames(df)) df$cs_custSupName else NA,
         Number = df$nr,
-        LeadCode = df$leadCode,
-        LeadDescription = df$leadDescription,
+        Lead.Code = df$leadCode,
+        Lead.Description = df$leadDescription,
         Type = df$accountType,
-        EffectiveDate = df$trDt
+        Effective.Date = df$trDt
       )
       attr(result, "File") <- unique(df$file)
       attr(result, "Date") <- unique(df$dateCreated)

@@ -35,6 +35,7 @@ This function reads and parses Dutch XML Audit Files (XAF),
 \dontrun{
 df <- read.xaf("path/to/xaf/file.xaf")
 head(df)
+attributes(df)$Journals
 }
 }
 \references{
