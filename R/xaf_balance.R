@@ -44,7 +44,6 @@ xaf_balance <- function(x, date = NULL) {
   lang <- attr(x, "lang")
   if (!is.null(date)) {
     date <- try(as.Date(date, format = "%d-%m-%Y"))
-    print(date)
     stopifnot("stop" = !inherits(date, "try-error"))
     x_new <- switch(lang,
       "nl" = x[x$Datum <= date, ],
@@ -64,11 +63,10 @@ xaf_balance <- function(x, date = NULL) {
     "en" = aggregate(x[x$Type == "Balance sheet", ]$Amount, by = list(b = x[x$Soort == "Balance sheet", ]$Account), FUN = sum, na.rm = TRUE)
   )
   balance <- balance[order(balance$b), ]
-  if (lang == "nl") {
-    accounts <- attr(x, "Grootboeken")
-  } else {
-    accounts <- attr(x, "Accounts")
-  }
+  accounts <- switch(lang,
+    "nl" = attr(x, "Grootboeken"),
+    "en" = attr(x, "Accounts")
+  )
   matched_accounts <- accounts[match(balance$b, accounts$accDesc), ]
   lookup <- switch(lang,
     "nl" = c(
@@ -88,20 +86,56 @@ xaf_balance <- function(x, date = NULL) {
     "nl" = c("Categorie", "Grootboek", "Saldo"),
     "en" = c("Category", "Account", "Amount")
   )
+  totname <- switch(lang,
+    "nl" = "Totaal",
+    "en" = "Total"
+  )
+  subtotname <- switch(lang,
+    "nl" = "Subtotaal",
+    "en" = "Subtotal"
+  )
   rownames(balance) <- seq_len(nrow(balance))
-  if (lang == "nl") {
-    balance <- balance[order(balance$Categorie, -(balance$Saldo > 0), balance$Grootboek), ]
-    new <- data.frame("Totaal", "", sum(balance$Saldo))
-    names(new) <- names(balance)
-    balance <- rbind(balance, new)
-    balance$Categorie <- ifelse(duplicated(balance$Categorie), "", balance$Categorie)
-  } else {
-    balance <- balance[order(balance$Category, -(balance$Amount > 0), balance$Account), ]
-    new <- data.frame("Total", "", sum(balance$Amount))
-    names(new) <- names(balance)
-    balance <- rbind(balance, new)
-    balance$Category <- ifelse(duplicated(balance$Category), "", balance$Category)
+  balance <- balance[order(balance[, 1], -(balance[, 3] > 0), balance[, 2]), ]
+  balance[, 1] <- ifelse(duplicated(balance[, 1]), "", balance[, 1])
+  new <- data.frame(numeric(), numeric(), numeric())
+  colnames(new) <- colnames(balance)
+  for (i in 1:nrow(balance)) {
+    if (i == 1) {
+      index <- 1
+      new <- rbind(new, balance[1, ])
+    } else {
+      if (i == nrow(balance)) {
+        if (balance[i, 1] == "") {
+          new <- rbind(new, balance[i, ])
+          df <- data.frame(subtotname, "", sum(balance[index, 3]))
+          names(df) <- names(balance)
+          new <- rbind(new, df)
+        } else {
+          df <- data.frame(subtotname, "", sum(balance[index, 3]))
+          names(df) <- names(balance)
+          new <- rbind(new, df)
+          new <- rbind(new, balance[i, ])
+          df <- data.frame(subtotname, "", sum(balance[nrow(balance), 3]))
+          names(df) <- names(balance)
+          new <- rbind(new, df)
+        }
+      } else {
+        if (balance[i, 1] != "") {
+          df <- data.frame(subtotname, "", sum(balance[index, 3]))
+          names(df) <- names(balance)
+          new <- rbind(new, df)
+          index <- i
+          new <- rbind(new, balance[i, ])
+        } else {
+          index <- c(index, i)
+          new <- rbind(new, balance[i, ])
+        }
+      }
+    }
   }
-  rownames(balance) <- seq_len(nrow(balance))
-  return(balance)
+  newrow <- data.frame(totname, "", sum(balance[, 3]))
+  names(newrow) <- names(balance)
+  new <- rbind(new, newrow)
+  rownames(new) <- seq_len(nrow(new))
+  return(new)
 }
