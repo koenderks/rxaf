@@ -21,7 +21,7 @@
           if (subrecords[j]) {
             row[[names(datapoint[[i]][j])]] <- unlist(datapoint[[i]][[j]])
           } else {
-            print("Another sublayer")
+            print("Unexplored layer found")
           }
         }
       }
@@ -42,46 +42,43 @@
   }
   rows <- vector("list", size)
   index <- 1
-  entries <- transactions[which(names(transactions) == "journal")]
-  for (i in seq_along(entries)) {
-    journal <- entries[i]$journal
+  journals <- transactions[which(names(transactions) == "journal")]
+  for (journal in journals) {
     journal[lengths(journal) == 0] <- NA
-    transaction_indices <- which(names(journal) == "transaction")
-    non_transaction_indices <- which(names(journal) != "transaction")
-    records <- journal[transaction_indices]
-    row_part1 <- data.frame(journal[non_transaction_indices])
-    colnames(row_part1) <- names(unlist(journal[non_transaction_indices]))
-    row <- row_part1
-    for (j in seq_along(records)) {
-      record <- records[j]$transaction
+    records <- journal[lengths(journal) > 1]
+    journal <- journal[lengths(journal) == 1]
+    row1 <- unlist(journal)
+    row <- row1
+    for (record in records) {
       record[lengths(record) == 0] <- NA
-      trLine_indices <- which(names(record) == "trLine")
-      non_trLine_indices <- which(names(record) != "trLine")
-      subfields <- record[trLine_indices]
-      row_part2 <- data.frame(record[non_trLine_indices])
-      colnames(row_part2) <- names(unlist(record[non_trLine_indices]))
-      common_cols <- intersect(colnames(row_part1), colnames(row_part2))
-      row_part1 <- row_part1[, !(names(row_part1) %in% common_cols)]
-      row <- cbind(row_part1, row_part2)
-      for (k in seq_along(subfields)) {
-        subfield <- subfields[k]$trLine
+      subfields <- record[lengths(record) > 1]
+      record <- record[lengths(record) == 1]
+      row2 <- unlist(record)
+      row1 <- row[!(names(row) %in% intersect(names(row), names(row2)))]
+      row <- c(row1, row2)
+      for (subfield in subfields) {
         subfield[lengths(subfield) == 0] <- NA
-        vat_indices <- which(names(subfield) == "vat")
-        non_vat_indices <- which(names(subfield) != "vat")
-        row_part3 <- data.frame(subfield[non_vat_indices])
-        colnames(row_part3) <- names(subfield[non_vat_indices])
-        if (length(vat_indices) > 0) {
-          subfields1 <- subfield[vat_indices]
-          subfields1[lengths(subfields1) == 0] <- NA
-          vat <- data.frame(subfields1$vat)
-          colnames(vat) <- names(subfields1$vat)
-          row_part3 <- cbind(row_part3, vat)
+        subsubfields <- subfield[lengths(subfield) > 1]
+        subfield <- subfield[lengths(subfield) == 1]
+        row3 <- unlist(subfield)
+        row1 <- row1[!(names(row1) %in% intersect(names(row1), names(row3)))]
+        row2 <- row2[!(names(row2) %in% intersect(names(row2), names(row3)))]
+        row <- c(row1, row2, row3)
+        for (subsubfield in subsubfields) {
+          subsubfield[lengths(subsubfield) == 0] <- NA
+          subsubsubfields <- subsubfield[lengths(subsubfield) > 1]
+          subsubfield <- subsubfield[lengths(subsubfield) == 1]
+          row4 <- unlist(subsubfield)
+          row1 <- row1[!(names(row1) %in% intersect(names(row1), names(row4)))]
+          row2 <- row2[!(names(row2) %in% intersect(names(row2), names(row4)))]
+          row2 <- row2[!(names(row2) %in% intersect(names(row2), names(row4)))]
+          row <- c(row1, row2, row3, row4)
+          if (length(subsubsubfields) > 0) {
+            print("Unexplored layer found")
+          }
         }
-        common_cols <- intersect(colnames(row), colnames(row_part3))
-        row <- row[, !(names(row) %in% common_cols)]
-        row <- cbind(row, row_part3)
-        row[["desc"]] <- if (is.null(row_part3[["desc"]])) NA else row_part3[["desc"]] # Always take description from the transaction, even if missing
-        rows[[index]] <- row
+        row["desc"] <- if (!is.null(row3["desc"])) row3["desc"] else NA
+        rows[[index]] <- as.data.frame(t(row))
         if (progress) {
           utils::setTxtProgressBar(pb, index)
         }
