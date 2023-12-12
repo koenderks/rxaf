@@ -145,7 +145,7 @@
   x$leadReference <- matched_accounts$leadReference
   x$accountType <- switch(lang,
     "nl" = ifelse(x$accTp == "P", "Winst & Verlies", ifelse(x$accTp == "B", "Balans", "Onbekend balanstype")),
-    "en" = ifelse(x$accTp == "P", "Profit & Loss", ifelse(x$accTp == "B", "Balance Sheet", "Unknown accounttype"))
+    "en" = ifelse(x$accTp == "P", "Profit & Loss", ifelse(x$accTp == "B", "Balance sheet", "Unknown accounttype"))
   )
   lookup <- switch(lang,
     "nl" = c(
