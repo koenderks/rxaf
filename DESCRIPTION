@@ -11,7 +11,7 @@ Description: The 'rxaf' package provides functionalities to read and parse Dutch
     XML Audit Files (XAF). These files are commonly used in the Netherlands for
     financial and auditing purposes.
 Imports:
-    dplyr,
+    data.table,
     utils,
     xml2
 Suggests:

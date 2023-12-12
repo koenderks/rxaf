@@ -71,18 +71,17 @@ read_xaf <- function(file,
   doc <- xml2::as_list(flatfile)
   header <- doc$auditfile$header
   company <- doc$auditfile$company
-  journals <- .construct_journal_index(company, lang)
-  accounts <- .construct_account_index(company, lang)
-  vats <- .construct_vats_index(company)
-  relations <- .construct_custsup_index(company)
-  transactions <- company$transactions
-  df <- .construct_mutations(transactions, progress)
-  df <- .add_raw_amounts(df)
-  df <- .add_raw_vats(df, vats)
-  df <- .add_raw_relations(df, relations)
-  df <- .add_raw_accounts(df, accounts)
-  df <- .add_raw_journals(df, journals)
-  df <- .add_raw_info(df, file, header, company, transactions)
+  journals <- .construct_subtable(company, "transactions", "journal", "jrnID", "transaction")
+  accounts <- .construct_subtable(company, "generalLedger", "ledgerAccount", "accID")
+  vats <- .construct_subtable(company, "vatCodes", "vatCode", "vatID")
+  relations <- .construct_subtable(company, "customersSuppliers", "customerSupplier", "custSupID")
+  df <- .construct_mutations(company$transactions, progress)
+  df <- .raw_amounts(df)
+  df <- .raw_vats(df, vats)
+  df <- .raw_relations(df, relations)
+  df <- .raw_accounts(df, accounts, lang)
+  df <- .raw_journals(df, journals, lang)
+  df <- .raw_info(df, file, header, company, company$transactions)
   result <- .clean_xaf(df, clean, lang)
   attr(result, "lang") <- lang
   attr(result, "clean") <- clean

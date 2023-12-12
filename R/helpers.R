@@ -1,147 +1,36 @@
-.xafvalue <- function(x) {
-  if (length(x) > 0) {
-    return(x[[1]])
-  } else {
-    return(NA)
-  }
-}
-
-.construct_vats_index <- function(company) {
-  vatCodes <- company$vatCodes[names(company$vatCodes) == "vatCode"]
-  rows <- lapply(vatCodes, function(vatCode) {
-    vatCode[lengths(vatCode) == 0] <- NA
-    row <- data.frame(vatCode)
-    colnames(row) <- names(vatCode)
-    return(row)
-  })
-  tb <- dplyr::bind_rows(rows)
-  tb <- tb[order(tb$vatID), ]
-  rownames(tb) <- seq_len(nrow(tb))
-  return(tb)
-}
-
-.construct_custsup_index <- function(company) {
-  indices <- which(names(company$customersSuppliers) == "customerSupplier")
-  n <- length(indices)
-  customersSuppliers <- company$customersSuppliers[indices]
-  tb <- do.call(rbind, lapply(customersSuppliers, function(customerSupplier) {
-    data.frame(
-      custSupID = .xafvalue(customerSupplier$custSupID),
-      custSupName = .xafvalue(customerSupplier$custSupName),
-      commerceNr = .xafvalue(customerSupplier$commerceNr),
-      taxRegistrationCountry = .xafvalue(customerSupplier$taxRegistrationCountry),
-      custSupTp = .xafvalue(customerSupplier$custSupTp),
-      streetName = .xafvalue(customerSupplier$streetAddress$streetname),
-      country = .xafvalue(customerSupplier$streetAddress$country),
-      city = .xafvalue(customerSupplier$streetAddress$city),
-      postalCode = .xafvalue(customerSupplier$streetAddress$postalCode),
-      telephone = .xafvalue(customerSupplier$telephone),
-      website = .xafvalue(customerSupplier$website),
-      contact = .xafvalue(customerSupplier$contact),
-      fax = .xafvalue(customerSupplier$fax),
-      taxRegIdent = .xafvalue(customerSupplier$taxRegIdent),
-      email = .xafvalue(customerSupplier$eMail),
-      bankAccNr = .xafvalue(customerSupplier$bankAccount$bankAccNr),
-      bankIdCd = .xafvalue(customerSupplier$bankAccount$bankIdCd)
-    )
-  }))
-  tb <- tb[order(tb$custSupID), ]
-  rownames(tb) <- seq_len(nrow(tb))
-  return(tb)
-}
-
-.construct_account_index <- function(company, lang) {
-  indices <- which(names(company$generalLedger) == "ledgerAccount")
-  n <- length(indices)
-  generalLedger <- company$generalLedger[indices]
-  tb <- do.call(rbind, lapply(generalLedger, function(ledgerAccount) {
-    accTp <- .xafvalue(ledgerAccount$accTp)
-    accID <- .xafvalue(ledgerAccount$accID)
-    data.frame(
-      accID = accID,
-      accDesc = .xafvalue(ledgerAccount$accDesc),
-      accTp = accTp,
-      leadCode = .xafvalue(ledgerAccount$leadCode),
-      leadDescription = .xafvalue(ledgerAccount$leadDescription),
-      leadReference = .xafvalue(ledgerAccount$leadReference),
-      accountType = switch(lang,
-        "nl" = ifelse(accTp == "P", "Winst & Verlies", ifelse(accTp == "B", "Balans", "Onbekend balanstype")),
-        "en" = ifelse(accTp == "P", "Profit & Loss", ifelse(accTp == "B", "Balance Sheet", "Unknown accounttype"))
-      ),
-      accountKind = ifelse(!is.na(accID), switch(lang,
-        "nl" = switch(substring(accID, 1, 1),
-          "0" = "Vaste activa en passiva",
-          "1" = "Vlottende activa en passiva",
-          "2" = "Tussenrekening",
-          "3" = "Voorraadrekening",
-          "4" = "Kostenrekening",
-          "5" = NA,
-          "6" = NA,
-          "7" = "Kostpijs rekening",
-          "8" = "Omzet rekening",
-          "9" = "Financiele baten en lasten"
-        ),
-        "en" = switch(substring(accID, 1, 1),
-          "0" = "Fixed assets and liabilities",
-          "1" = "Current assest and liabilities",
-          "2" = "Suspense account",
-          "3" = "Inventory account",
-          "4" = "Expense account",
-          "5" = NA,
-          "6" = NA,
-          "7" = "Cost account",
-          "8" = "Revenue account",
-          "9" = "Financial income and expenses"
-        )
-      ), NA)
-    )
-  }))
-  tb <- tb[order(tb$accID), ]
-  rownames(tb) <- seq_len(nrow(tb))
-  return(tb)
-}
-
-.construct_journal_index <- function(company, lang) {
-  indices <- which(names(company$transactions) == "journal")
-  n <- length(indices)
-  transactions <- company$transactions[indices]
-  tb <- do.call(rbind, lapply(transactions, function(transaction) {
-    jrnTp <- .xafvalue(transaction$jrnTp)
-    jrnID <- .xafvalue(transaction$jrnID)
-    data.frame(
-      jrnID = jrnID,
-      jrnDesc = .xafvalue(transaction$desc),
-      jrnTp = jrnTp,
-      offsetAccID = .xafvalue(transaction$offsetAccID),
-      bankAccNr = .xafvalue(transaction$bankAccNr),
-      journalType = if (!is.na(jrnTp)) {
-        if (lang == "nl") {
-          ifelse(jrnTp %in% c("Z", "B", "P", "O", "C", "M", "Y", "S"), switch(jrnTp,
-            "Z" = "Memoriaal",
-            "B" = "Bankboek",
-            "P" = "Inkoopboek",
-            "O" = "Open/Sluit balans",
-            "C" = "Kasboek",
-            "M" = "Memoriaal",
-            "Y" = "Salaris",
-            "S" = "Verkoopboek"
-          ), "Onbekend dagboek")
+.construct_subtable <- function(company, data_name, id_name, sort_name, exclude_name = NULL) {
+  data <- company[[data_name]][names(company[[data_name]]) == id_name]
+  rows <- lapply(data, function(datapoint) {
+    if (!is.null(exclude_name)) {
+      datapoint <- datapoint[which(names(datapoint) != exclude_name)]
+    }
+    datapoint[lengths(datapoint) == 0] <- NA
+    records <- lengths(datapoint) == 1
+    row <- list()
+    for (i in seq_len(length(datapoint))) {
+      if (records[i]) {
+        if (!is.null(names(datapoint[i][[1]]))) {
+          row[[names(datapoint[i][[1]])]] <- unlist(datapoint[[i]])
         } else {
-          ifelse(jrnTp %in% c("Z", "B", "P", "O", "C", "M", "Y", "S"), switch(jrnTp,
-            "Z" = "Memorial",
-            "B" = "Bank book",
-            "P" = "Purchase book",
-            "O" = "Open/Close balance",
-            "C" = "Cash book",
-            "M" = "Memorial",
-            "Y" = "Salary",
-            "S" = "Sales book"
-          ), "Unknown journal")
+          row[[names(datapoint[i])]] <- unlist(datapoint[[i]])
+        }
+      } else {
+        datapoint[[i]][lengths(datapoint[[i]]) == 0] <- NA
+        subrecords <- lengths(datapoint[[i]]) == 1
+        for (j in seq_along(subrecords)) {
+          if (subrecords[j]) {
+            row[[names(datapoint[[i]][j])]] <- unlist(datapoint[[i]][[j]])
+          } else {
+            print("Another sublayer")
+          }
         }
       }
-    )
-  }))
-  tb <- tb[order(tb$jrnID), ]
+    }
+    row <- data.frame(row)
+    return(row)
+  })
+  tb <- as.data.frame(data.table::rbindlist(rows, fill = TRUE))
+  tb <- tb[order(tb[, sort_name]), ]
   rownames(tb) <- seq_len(nrow(tb))
   return(tb)
 }
@@ -151,7 +40,6 @@
   if (progress) {
     pb <- utils::txtProgressBar(min = 0, max = size, initial = 0, width = 80, style = 3)
   }
-  # Extract all tags from journals
   rows <- vector("list", size)
   index <- 1
   entries <- transactions[which(names(transactions) == "journal")]
@@ -201,13 +89,11 @@
       }
     }
   }
-  suppressMessages({
-    df <- dplyr::bind_rows(rows)
-  })
+  df <- as.data.frame(data.table::rbindlist(rows, fill = TRUE))
   return(df)
 }
 
-.add_raw_amounts <- function(df) {
+.raw_amounts <- function(df) {
   df$amount <- as.numeric(df$amnt)
   df$amount[df$amntTp != "D"] <- -df$amount[df$amntTp != "D"]
   df <- df[, !colnames(df) %in% c("amntTp", "amnt")]
@@ -218,11 +104,11 @@
   return(df)
 }
 
-.add_raw_vats <- function(df, vats) {
+.raw_vats <- function(df, vats) {
   if ("vatID" %in% colnames(df)) {
     matched_vats <- vats[match(df$vatID, vats$vatID), ]
     df$vatDesc <- matched_vats$vatDesc
-    df$vat_amount <- ifelse(is.na(df$vatAmntTp), NA, ifelse(df$vatAmntTp == "D", as.numeric(df$vatAmnt), -as.numeric(df$vatAmnt)))
+    df$vat_amount <- ifelse(!is.na(df$vatAmntTp), ifelse(df$vatAmntTp == "D", as.numeric(df$vatAmnt), -as.numeric(df$vatAmnt)), NA)
     df$vatToClaimAccID <- matched_vats$vatToClaimAccID
     df$vatToPayAccID <- matched_vats$vatToPayAccID
     df <- df[, !colnames(df) %in% c("vatAmntTp", "vatAmnt")]
@@ -230,7 +116,7 @@
   return(df)
 }
 
-.add_raw_relations <- function(df, suppliers) {
+.raw_relations <- function(df, suppliers) {
   if ("custSupID" %in% colnames(df)) {
     matched_suppliers <- suppliers[match(df$custSupID, suppliers$custSupID), ]
     df$cs_custSupName <- matched_suppliers$custSupName
@@ -253,30 +139,62 @@
   return(df)
 }
 
-.add_raw_accounts <- function(df, accounts) {
+.raw_accounts <- function(df, accounts, lang) {
   matched_accounts <- accounts[match(df$accID, accounts$accID), ]
   df$accDesc <- matched_accounts$accDesc
   df$accTp <- matched_accounts$accTp
   df$leadCode <- matched_accounts$leadCode
   df$leadDescription <- matched_accounts$leadDescription
   df$leadReference <- matched_accounts$leadReference
-  df$accountType <- matched_accounts$accountType
-  df$accountKind <- matched_accounts$accountKind
+  df$accountType <- switch(lang,
+    "nl" = ifelse(df$accTp == "P", "Winst & Verlies", ifelse(df$accTp == "B", "Balans", "Onbekend balanstype")),
+    "en" = ifelse(df$accTp == "P", "Profit & Loss", ifelse(df$accTp == "B", "Balance Sheet", "Unknown accounttype"))
+  )
+  lookup <- switch(lang,
+    "nl" = c(
+      "Vaste activa en passiva", "Vlottende activa en passiva", "Tussenrekening",
+      "Voorraadrekening", "Kostenrekening", NA, NA, "Kostpijs rekening",
+      "Omzet rekening", "Financiele baten en lasten"
+    ),
+    "en" = c(
+      "Fixed assets and liabilities", "Current assest and liabilities", "Suspense account",
+      "Inventory account", "Expense account", NA, NA, "Cost account",
+      "Revenue account", "Financial income and expenses"
+    )
+  )
+  df$accountKind <- ifelse(!is.na(df$accID), lookup[as.integer(substr(df$accID, 1, 1)) + 1], NA)
   return(df)
 }
 
-.add_raw_journals <- function(df, journals) {
+.raw_journals <- function(df, journals, lang) {
   matched_journals <- journals[match(df$jrnID, journals$jrnID), ]
   df$jrn_jrnID <- matched_journals$jrnID
-  df$jrn_desc <- matched_journals$jrnDesc
+  df$jrn_desc <- matched_journals$desc
+  df$jrn_tp <- matched_journals$jrnTp
   df$jrn_offsetAccID <- matched_journals$offsetAccID
   df$jrn_bankAccNr <- matched_journals$bankAccNr
-  df$jrn_journaltype <- matched_journals$journalType
+  lookup <- switch(lang,
+    "nl" = c(
+      "Z" = "Memoriaal", "B" = "Bankboek", "P" = "Inkoopboek", "O" = "Open/Sluit balans",
+      "C" = "Kasboek", "M" = "Memoriaal", "Y" = "Salaris", "S" = "Verkoopboek"
+    ),
+    "en" = c(
+      "Z" = "Memorial", "B" = "Bank book", "P" = "Purchase book", "O" = "Open/Close balance",
+      "C" = "Cash book", "M" = "Memorial", "Y" = "Salary", "S" = "Sales book"
+    )
+  )
+  unknown <- switch(lang,
+    "nl" = "Onbekend dagboek",
+    "en" = "Unknown journal"
+  )
+  df$jrn_journalType <- ifelse(!is.na(matched_journals$jrnTp), ifelse(df$jrn_tp %in% names(lookup), lookup[df$jrn_tp], unknown), NA)
   return(df)
 }
 
-.add_raw_info <- function(df, file, header, company, transactions) {
-  df$file <- basename(file)
+.raw_info <- function(df, file, header, company, transactions) {
+  df$periodNumber <- as.numeric(df$periodNumber)
+  df$trDt <- as.Date(df$trDt)
+  df$effDate <- as.Date(df$effDate)
   df$fiscalYear <- header$fiscalYear[[1]]
   df$startDate <- header$startDate[[1]]
   df$endDate <- header$endDate[[1]]
@@ -290,12 +208,7 @@
   df$linesCount <- as.numeric(transactions$linesCount[[1]])
   df$totalDebit <- as.numeric(transactions$totalDebit[[1]])
   df$totalCredit <- as.numeric(transactions$totalCredit[[1]])
-  df$effMonth <- match(months(as.Date(df$effDate)), month.name)
-  df$account <- paste0(df$accID, " - ", df$accDesc)
-  df$journal <- paste0(df$jrnID, " - ", df$jrn_journaltype)
-  df$trDt <- as.Date(df$trDt)
-  df$periodNumber <- as.numeric(df$periodNumber)
-  df$effDate <- as.Date(df$effDate)
+  df$effMonth <- match(months(df$effDate), month.name)
   return(df)
 }
 
@@ -322,13 +235,12 @@
         Relatienummer = if ("custSupID" %in% colnames(df)) df$custSupID else NA,
         Relatie = if ("custSupID" %in% colnames(df)) df$cs_custSupName else NA,
         Volgnummer = df$nr,
-        Lead.Code = df$leadCode,
-        Lead.Omschrijving = df$leadDescription,
+        Lead.Code = if ("leadCode" %in% colnames(df)) df$leadCode else NA,
+        Lead.Omschrijving = if ("leadDescription" %in% colnames(df)) df$leadDescription else NA,
         Soort = df$accountType,
         Type = df$accountKind,
         Verwerkingsdatum = df$trDt
       )
-      result <- result[order(result$Periode, result$Datum), ]
       rownames(result) <- seq_len(nrow(result))
       attr(result, "Bestandsnaam") <- unique(df$file)
       attr(result, "Datum") <- unique(df$dateCreated)
@@ -360,13 +272,12 @@
         RelationID = if ("custSupID" %in% colnames(df)) df$custSupID else NA,
         Relation = if ("custSupID" %in% colnames(df)) df$cs_custSupName else NA,
         Number = df$nr,
-        Lead.Code = df$leadCode,
-        Lead.Description = df$leadDescription,
+        Lead.Code = if ("leadCode" %in% colnames(df)) df$leadCode else NA,
+        Lead.Description = if ("leadDescription" %in% colnames(df)) df$leadDescription else NA,
         Type = df$accountType,
         Kind = df$accountKind,
         Effective.Date = df$trDt
       )
-      result <- result[order(result$Period, result$Date), ]
       rownames(result) <- seq_len(nrow(result))
       attr(result, "File") <- unique(df$file)
       attr(result, "Date") <- unique(df$dateCreated)
