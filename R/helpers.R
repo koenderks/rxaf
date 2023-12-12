@@ -143,22 +143,21 @@
   x$leadCode <- matched_accounts$leadCode
   x$leadDescription <- matched_accounts$leadDescription
   x$leadReference <- matched_accounts$leadReference
-  x$accountType <- switch(lang,
-    "nl" = ifelse(x$accTp == "P", "Winst & Verlies", ifelse(x$accTp == "B", "Balans", "Onbekend balanstype")),
-    "en" = ifelse(x$accTp == "P", "Profit & Loss", ifelse(x$accTp == "B", "Balance sheet", "Unknown accounttype"))
-  )
-  lookup <- switch(lang,
-    "nl" = c(
+  if (lang == "nl") {
+    x$accountType <- ifelse(x$accTp == "P", "Winst & Verlies", ifelse(x$accTp == "B", "Balans", "Onbekend balanstype"))
+    lookup <- c(
       "Vaste activa en passiva", "Vlottende activa en passiva", "Tussenrekening",
       "Voorraadrekening", "Kostenrekening", NA, NA, "Kostpijs rekening",
       "Omzet rekening", "Financiele baten en lasten"
-    ),
-    "en" = c(
+    )
+  } else {
+    x$accountType <- ifelse(x$accTp == "P", "Profit & Loss", ifelse(x$accTp == "B", "Balance sheet", "Unknown accounttype"))
+    lookup <- c(
       "Fixed assets and liabilities", "Current assest and liabilities", "Suspense account",
       "Inventory account", "Expense account", NA, NA, "Cost account",
       "Revenue account", "Financial income and expenses"
     )
-  )
+  }
   x$accountKind <- ifelse(!is.na(x$accID), lookup[as.integer(substr(x$accID, 1, 1)) + 1], NA)
   return(x)
 }
@@ -170,20 +169,19 @@
   x$jrn_tp <- matched_journals$jrnTp
   x$jrn_offsetAccID <- matched_journals$offsetAccID
   x$jrn_bankAccNr <- matched_journals$bankAccNr
-  lookup <- switch(lang,
-    "nl" = c(
+  if (lang == "nl") {
+    lookup <- c(
       "Z" = "Memoriaal", "B" = "Bankboek", "P" = "Inkoopboek", "O" = "Open/Sluit balans",
       "C" = "Kasboek", "M" = "Memoriaal", "Y" = "Salaris", "S" = "Verkoopboek"
-    ),
-    "en" = c(
+    )
+    unknown <- "Onbekend dagboek"
+  } else {
+    lookup <- c(
       "Z" = "Memorial", "B" = "Bank book", "P" = "Purchase book", "O" = "Open/Close balance",
       "C" = "Cash book", "M" = "Memorial", "Y" = "Salary", "S" = "Sales book"
     )
-  )
-  unknown <- switch(lang,
-    "nl" = "Onbekend dagboek",
-    "en" = "Unknown journal"
-  )
+    unknown <- "Unknown journal"
+  }
   x$jrn_journalType <- ifelse(!is.na(matched_journals$jrnTp), ifelse(x$jrn_tp %in% names(lookup), lookup[x$jrn_tp], unknown), NA)
   return(x)
 }

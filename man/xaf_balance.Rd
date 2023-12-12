@@ -23,7 +23,7 @@ This function creates a balance sheet from a cleaned XAF file
 \examples{
 \dontrun{
 df <- read_xaf("path/to/xaf/file.xaf")
-xaf_balance(df, date = "2016-03-08")
+xaf_balance(df, date = "31-12-2022")
 }
 }
 \author{

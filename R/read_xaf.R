@@ -85,22 +85,17 @@ read_xaf <- function(file,
   mutations <- .clean_mutations(mutations, clean, lang)
   attr(mutations, "lang") <- lang
   attr(mutations, "clean") <- clean
-  attr(mutations, switch(lang,
-    "nl" = "Dagboeken",
-    "en" = "Journals"
-  )) <- journals
-  attr(mutations, switch(lang,
-    "nl" = "Grootboeken",
-    "en" = "Accounts"
-  )) <- accounts
-  attr(mutations, switch(lang,
-    "nl" = "BTW.Codes",
-    "en" = "VAT.Codes"
-  )) <- vats
-  attr(mutations, switch(lang,
-    "nl" = "Relaties",
-    "en" = "Relations"
-  )) <- relations
+  if (lang == "nl") {
+    attr(mutations, "Dagboeken") <- journals
+    attr(mutations, "Grootboeken") <- accounts
+    attr(mutations, "BTW.Codes") <- vats
+    attr(mutations, "Relaties") <- relations
+  } else {
+    attr(mutations, "Journals") <- journals
+    attr(mutations, "Accounts") <- accounts
+    attr(mutations, "VAT.Codes") <- vats
+    attr(mutations, "Relations") <- relations
+  }
   class(mutations) <- c(class(mutations), "xaf")
   return(mutations)
 }

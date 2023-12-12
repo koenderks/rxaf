@@ -34,7 +34,7 @@
 #' @examples
 #' \dontrun{
 #' df <- read_xaf("path/to/xaf/file.xaf")
-#' xaf_balance(df, date = "2016-03-08")
+#' xaf_balance(df, date = "31-12-2022")
 #' }
 #' @export
 
@@ -45,61 +45,51 @@ xaf_balance <- function(x, date = NULL) {
   if (!is.null(date)) {
     date <- try(as.Date(date, format = "%d-%m-%Y"))
     stopifnot("stop" = !inherits(date, "try-error"))
-    x_new <- switch(lang,
-      "nl" = x[x$Datum <= date, ],
-      "en" = x[x$Date <= date, ]
-    )
+    if (lang == "nl") {
+      x_new <- x[x$Datum <= date, ]
+      dates <- x$Datum
+    } else {
+      x_new <- x[x$Date <= date, ]
+      dates <- x$Date
+    }
     if (nrow(x_new) == 0) {
-      message <- switch(lang,
-        "nl" = paste0("No mutations before ", date, "; first mutation on ", min(x$Datum), " and last mutation on ", max(x$Datum)),
-        "en" = paste0("No mutations before ", date, "; first mutation on ", min(x$Date), " and last mutation on ", max(x$Date))
-      )
-      stop(message)
+      stop(paste0("No mutations before ", date, "; first mutation on ", min(dates), " and last mutation on ", max(dates)))
     }
     x <- x_new
   }
-  balance <- switch(lang,
-    "nl" = aggregate(x[x$Soort == "Balans", ]$Saldo, by = list(b = x[x$Soort == "Balans", ]$Grootboek), FUN = sum, na.rm = TRUE),
-    "en" = aggregate(x[x$Type == "Balance sheet", ]$Amount, by = list(b = x[x$Soort == "Balance sheet", ]$Account), FUN = sum, na.rm = TRUE)
-  )
-  balance <- balance[order(balance$b), ]
-  accounts <- switch(lang,
-    "nl" = attr(x, "Grootboeken"),
-    "en" = attr(x, "Accounts")
-  )
-  matched_accounts <- accounts[match(balance$b, accounts$accDesc), ]
-  lookup <- switch(lang,
-    "nl" = c(
+  if (lang == "nl") {
+    cols <- c("Categorie", "Grootboek", "Saldo")
+    accounts <- attr(x, "Grootboeken")
+    tot <- "Totaal"
+    subtot <- "Subtotaal"
+    lookup <- c(
       "Vaste activa en passiva", "Vlottende activa en passiva", "Tussenrekeningen",
       "Voorraadrekeningen", "Kostenrekeningen", NA, NA, "Kostpijs rekeningen",
       "Omzet rekeningen", "Financiele baten en lasten"
-    ),
-    "en" = c(
+    )
+    balance <- aggregate(x[x$Soort == "Balans", ]$Saldo, by = list(b = x[x$Soort == "Balans", ]$Grootboek), FUN = sum, na.rm = TRUE)
+  } else {
+    cols <- c("Category", "Account", "Amount")
+    accounts <- attr(x, "Accounts")
+    tot <- "Total"
+    subtot <- "Subtotal"
+    lookup <- c(
       "Fixed assets and liabilities", "Current assest and liabilities", "Suspense accounts",
       "Inventory accounts", "Expense accounts", NA, NA, "Cost accounts",
       "Revenue accounts", "Financial income and expenses"
     )
-  )
-  rek <- ifelse(!is.na(matched_accounts$accID), lookup[as.integer(substr(matched_accounts$accID, 1, 1)) + 1], NA)
-  balance <- cbind(rek = rek, balance)
-  colnames(balance) <- switch(lang,
-    "nl" = c("Categorie", "Grootboek", "Saldo"),
-    "en" = c("Category", "Account", "Amount")
-  )
-  totname <- switch(lang,
-    "nl" = "Totaal",
-    "en" = "Total"
-  )
-  subtotname <- switch(lang,
-    "nl" = "Subtotaal",
-    "en" = "Subtotal"
-  )
+    balance <- aggregate(x[x$Type == "Balance sheet", ]$Amount, by = list(b = x[x$Soort == "Balance sheet", ]$Account), FUN = sum, na.rm = TRUE)
+  }
+  balance <- balance[order(balance$b), ]
+  matched_accounts <- accounts[match(balance$b, accounts$accDesc), ]
+  balance <- cbind(rek = ifelse(!is.na(matched_accounts$accID), lookup[as.integer(substr(matched_accounts$accID, 1, 1)) + 1], NA), balance)
+  colnames(balance) <- cols
   rownames(balance) <- seq_len(nrow(balance))
   balance <- balance[order(balance[, 1], -(balance[, 3] > 0), balance[, 2]), ]
   balance[, 1] <- ifelse(duplicated(balance[, 1]), "", balance[, 1])
   new <- data.frame(numeric(), numeric(), numeric())
   colnames(new) <- colnames(balance)
-  for (i in 1:nrow(balance)) {
+  for (i in seq_len(nrow(balance))) {
     if (i == 1) {
       index <- 1
       new <- rbind(new, balance[1, ])
@@ -107,21 +97,21 @@ xaf_balance <- function(x, date = NULL) {
       if (i == nrow(balance)) {
         if (balance[i, 1] == "") {
           new <- rbind(new, balance[i, ])
-          df <- data.frame(subtotname, "", sum(balance[index, 3]))
+          df <- data.frame(subtot, "", sum(balance[index, 3]))
           names(df) <- names(balance)
           new <- rbind(new, df)
         } else {
-          df <- data.frame(subtotname, "", sum(balance[index, 3]))
+          df <- data.frame(subtot, "", sum(balance[index, 3]))
           names(df) <- names(balance)
           new <- rbind(new, df)
           new <- rbind(new, balance[i, ])
-          df <- data.frame(subtotname, "", sum(balance[nrow(balance), 3]))
+          df <- data.frame(subtot, "", sum(balance[nrow(balance), 3]))
           names(df) <- names(balance)
           new <- rbind(new, df)
         }
       } else {
         if (balance[i, 1] != "") {
-          df <- data.frame(subtotname, "", sum(balance[index, 3]))
+          df <- data.frame(subtot, "", sum(balance[index, 3]))
           names(df) <- names(balance)
           new <- rbind(new, df)
           index <- i
@@ -133,7 +123,7 @@ xaf_balance <- function(x, date = NULL) {
       }
     }
   }
-  newrow <- data.frame(totname, "", sum(balance[, 3]))
+  newrow <- data.frame(tot, "", sum(balance[, 3]))
   names(newrow) <- names(balance)
   new <- rbind(new, newrow)
   rownames(new) <- seq_len(nrow(new))
