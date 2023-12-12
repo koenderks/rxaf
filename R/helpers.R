@@ -7,17 +7,14 @@
 }
 
 .construct_vats_index <- function(company) {
-  indices <- which(names(company$vatCodes) == "vatCode")
-  n <- length(indices)
-  vatCodes <- company$vatCodes[indices]
-  tb <- do.call(rbind, lapply(vatCodes, function(vatCode) {
-    data.frame(
-      vatID = .xafvalue(vatCode$vatID),
-      vatDesc = .xafvalue(vatCode$vatDesc),
-      vatToClaimAccID = .xafvalue(vatCode$vatToClaimAccID),
-      vatToPayAccID = .xafvalue(vatCode$vatToPayAccID)
-    )
-  }))
+  vatCodes <- company$vatCodes[names(company$vatCodes) == "vatCode"]
+  rows <- lapply(vatCodes, function(vatCode) {
+    vatCode[lengths(vatCode) == 0] <- NA
+    row <- data.frame(vatCode)
+    colnames(row) <- names(vatCode)
+    return(row)
+  })
+  tb <- dplyr::bind_rows(rows)
   tb <- tb[order(tb$vatID), ]
   rownames(tb) <- seq_len(nrow(tb))
   return(tb)
