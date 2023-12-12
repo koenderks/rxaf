@@ -43,28 +43,21 @@ keywords:
 - xaf
 references:
 - type: software
-  title: dplyr
-  abstract: 'dplyr: A Grammar of Data Manipulation'
+  title: data.table
+  abstract: 'data.table: Extension of `data.frame`'
   notes: Imports
-  url: https://dplyr.tidyverse.org
-  repository: https://CRAN.R-project.org/package=dplyr
+  url: https://r-datatable.com
+  repository: https://CRAN.R-project.org/package=data.table
   authors:
-  - family-names: Wickham
-    given-names: Hadley
-    email: hadley@posit.co
-    orcid: https://orcid.org/0000-0003-4757-117X
-  - family-names: François
-    given-names: Romain
-    orcid: https://orcid.org/0000-0002-2444-4226
-  - family-names: Henry
-    given-names: Lionel
-  - family-names: Müller
-    given-names: Kirill
-    orcid: https://orcid.org/0000-0002-1416-3412
-  - family-names: Vaughan
-    given-names: Davis
-    email: davis@posit.co
-    orcid: https://orcid.org/0000-0003-4777-038X
+  - family-names: Barrett
+    given-names: Tyson
+    email: t.barrett88@gmail.com
+  - family-names: Dowle
+    given-names: Matt
+    email: mattjdowle@gmail.com
+  - family-names: Srinivasan
+    given-names: Arun
+    email: asrini@pm.me
   year: '2023'
 - type: software
   title: utils
