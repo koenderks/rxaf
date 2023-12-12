@@ -18,10 +18,12 @@
 #' @description This function creates a balance sheet from a cleaned XAF file
 #'   at a specific point in time.
 #'
-#' @usage xaf_balance(x, at = NULL)
+#' @usage xaf_balance(x, date = NULL)
 #'
-#' @param x  a data frame resulting from a call to \code{read_xaf()}.
-#' @param at a character specifying the date up until the balance should be made up.
+#' @param x     a data frame resulting from a call to \code{read_xaf()}.
+#' @param date  a character specifying the date up until the balance should be
+#'   made up. The required format is day-month-year (i.e., 02-01-2016 is january
+#'   second, 2016).
 #'
 #' @return A data frame containing the balance sheet.
 #'
@@ -32,40 +34,74 @@
 #' @examples
 #' \dontrun{
 #' df <- read_xaf("path/to/xaf/file.xaf")
-#' xaf_balance(df, at = "2016-03-08")
+#' xaf_balance(df, date = "2016-03-08")
 #' }
 #' @export
 
-xaf_balance <- function(x, at = NULL) {
+xaf_balance <- function(x, date = NULL) {
   stopifnot("'x' is not output from 'read_xaf()'" = inherits(x, "xaf"))
   stopifnot("not supported for uncleaned files'" = attr(x, "clean"))
   lang <- attr(x, "lang")
-  if (!is.null(at)) {
-    at <- try(as.Date(at))
-    stopifnot("stop" = !inherits(at, "try-error"))
+  if (!is.null(date)) {
+    date <- try(as.Date(date, format = "%d-%m-%Y"))
+    print(date)
+    stopifnot("stop" = !inherits(date, "try-error"))
     x_new <- switch(lang,
-      "nl" = x[x$Datum <= at, ],
-      "en" = x[x$Date <= at, ]
+      "nl" = x[x$Datum <= date, ],
+      "en" = x[x$Date <= date, ]
     )
     if (nrow(x_new) == 0) {
       message <- switch(lang,
-        "nl" = paste0("No mutations before ", at, "; first mutation on ", min(x$Datum), " and last mutation on ", max(x$Datum)),
-        "en" = paste0("No mutations before ", at, "; first mutation on ", min(x$Date), " and last mutation on ", max(x$Date))
+        "nl" = paste0("No mutations before ", date, "; first mutation on ", min(x$Datum), " and last mutation on ", max(x$Datum)),
+        "en" = paste0("No mutations before ", date, "; first mutation on ", min(x$Date), " and last mutation on ", max(x$Date))
       )
       stop(message)
     }
     x <- x_new
   }
   balance <- switch(lang,
-    "nl" = aggregate(x[x$Soort == "Balans", ]$Saldo, by = list(a = x[x$Soort == "Balans", ]$Dagboek, b = x[x$Soort == "Balans", ]$Grootboek), FUN = sum, na.rm = TRUE),
-    "en" = aggregate(x[x$Type == "Balance sheet", ]$Amount, by = list(a = x[x$Type == "Balance sheet", ]$Journal, b = x[x$Soort == "Balance sheet", ]$Account), FUN = sum, na.rm = TRUE)
+    "nl" = aggregate(x[x$Soort == "Balans", ]$Saldo, by = list(b = x[x$Soort == "Balans", ]$Grootboek), FUN = sum, na.rm = TRUE),
+    "en" = aggregate(x[x$Type == "Balance sheet", ]$Amount, by = list(b = x[x$Soort == "Balance sheet", ]$Account), FUN = sum, na.rm = TRUE)
   )
-  balance <- balance[order(balance$a, balance$b), ]
-  balance[duplicated(balance$a), 1] <- NA
+  balance <- balance[order(balance$b), ]
+  if (lang == "nl") {
+    accounts <- attr(x, "Grootboeken")
+  } else {
+    accounts <- attr(x, "Accounts")
+  }
+  matched_accounts <- accounts[match(balance$b, accounts$accDesc), ]
+  lookup <- switch(lang,
+    "nl" = c(
+      "Vaste activa en passiva", "Vlottende activa en passiva", "Tussenrekeningen",
+      "Voorraadrekeningen", "Kostenrekeningen", NA, NA, "Kostpijs rekeningen",
+      "Omzet rekeningen", "Financiele baten en lasten"
+    ),
+    "en" = c(
+      "Fixed assets and liabilities", "Current assest and liabilities", "Suspense accounts",
+      "Inventory accounts", "Expense accounts", NA, NA, "Cost accounts",
+      "Revenue accounts", "Financial income and expenses"
+    )
+  )
+  rek <- ifelse(!is.na(matched_accounts$accID), lookup[as.integer(substr(matched_accounts$accID, 1, 1)) + 1], NA)
+  balance <- cbind(rek = rek, balance)
   colnames(balance) <- switch(lang,
-    "nl" = c("Dagboek", "Grootboek", "Saldo"),
-    "en" = c("Journal", "Account", "Amount")
+    "nl" = c("Categorie", "Grootboek", "Saldo"),
+    "en" = c("Category", "Account", "Amount")
   )
+  rownames(balance) <- seq_len(nrow(balance))
+  if (lang == "nl") {
+    balance <- balance[order(balance$Categorie, -(balance$Saldo > 0), balance$Grootboek), ]
+    new <- data.frame("Totaal", "", sum(balance$Saldo))
+    names(new) <- names(balance)
+    balance <- rbind(balance, new)
+    balance$Categorie <- ifelse(duplicated(balance$Categorie), "", balance$Categorie)
+  } else {
+    balance <- balance[order(balance$Category, -(balance$Amount > 0), balance$Account), ]
+    new <- data.frame("Total", "", sum(balance$Amount))
+    names(new) <- names(balance)
+    balance <- rbind(balance, new)
+    balance$Category <- ifelse(duplicated(balance$Category), "", balance$Category)
+  }
   rownames(balance) <- seq_len(nrow(balance))
   return(balance)
 }

@@ -4,12 +4,14 @@
 \alias{xaf_balance}
 \title{Create a Balance Sheet from a cleaned XAF file}
 \usage{
-xaf_balance(x, at = NULL)
+xaf_balance(x, date = NULL)
 }
 \arguments{
 \item{x}{a data frame resulting from a call to \code{read_xaf()}.}
 
-\item{at}{a character specifying the date up until the balance should be made up.}
+\item{date}{a character specifying the date up until the balance should be
+made up. The required format is day-month-year (i.e., 02-01-2016 is january
+second, 2016).}
 }
 \value{
 A data frame containing the balance sheet.
@@ -21,7 +23,7 @@ This function creates a balance sheet from a cleaned XAF file
 \examples{
 \dontrun{
 df <- read_xaf("path/to/xaf/file.xaf")
-xaf_balance(df, at = "2016-03-08")
+xaf_balance(df, date = "2016-03-08")
 }
 }
 \author{
