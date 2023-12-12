@@ -93,62 +93,62 @@
   return(df)
 }
 
-.raw_amounts <- function(df) {
-  df$amount <- as.numeric(df$amnt)
-  df$amount[df$amntTp != "D"] <- -df$amount[df$amntTp != "D"]
-  df <- df[, !colnames(df) %in% c("amntTp", "amnt")]
-  df$debet <- df$amount
-  df$debet[df$debet < 0] <- NA
-  df$credit <- -df$amount
-  df$credit[df$credit < 0] <- NA
-  return(df)
+.add_amounts <- function(x) {
+  x$amount <- as.numeric(x$amnt)
+  x$amount[x$amntTp != "D"] <- -x$amount[x$amntTp != "D"]
+  x <- x[, !colnames(x) %in% c("amntTp", "amnt")]
+  x$debet <- x$amount
+  x$debet[x$debet < 0] <- NA
+  x$credit <- -x$amount
+  x$credit[x$credit < 0] <- NA
+  return(x)
 }
 
-.raw_vats <- function(df, vats) {
-  if ("vatID" %in% colnames(df)) {
-    matched_vats <- vats[match(df$vatID, vats$vatID), ]
-    df$vatDesc <- matched_vats$vatDesc
-    df$vat_amount <- ifelse(!is.na(df$vatAmntTp), ifelse(df$vatAmntTp == "D", as.numeric(df$vatAmnt), -as.numeric(df$vatAmnt)), NA)
-    df$vatToClaimAccID <- matched_vats$vatToClaimAccID
-    df$vatToPayAccID <- matched_vats$vatToPayAccID
-    df <- df[, !colnames(df) %in% c("vatAmntTp", "vatAmnt")]
+.add_vats <- function(x, vats) {
+  if ("vatID" %in% colnames(x)) {
+    matched_vats <- vats[match(x$vatID, vats$vatID), ]
+    x$vatDesc <- matched_vats$vatDesc
+    x$vat_amount <- ifelse(!is.na(x$vatAmntTp), ifelse(x$vatAmntTp == "D", as.numeric(x$vatAmnt), -as.numeric(x$vatAmnt)), NA)
+    x$vatToClaimAccID <- matched_vats$vatToClaimAccID
+    x$vatToPayAccID <- matched_vats$vatToPayAccID
+    x <- x[, !colnames(x) %in% c("vatAmntTp", "vatAmnt")]
   }
-  return(df)
+  return(x)
 }
 
-.raw_relations <- function(df, suppliers) {
-  if ("custSupID" %in% colnames(df)) {
-    matched_suppliers <- suppliers[match(df$custSupID, suppliers$custSupID), ]
-    df$cs_custSupName <- matched_suppliers$custSupName
-    df$cs_taxRegistrationCountry <- matched_suppliers$taxRegistrationCountry
-    df$cs_custSupTp <- matched_suppliers$custSupTp
-    df$cs_country <- matched_suppliers$country
-    df$cs_website <- matched_suppliers$website
-    df$cs_city <- matched_suppliers$city
-    df$cs_bankAccNr <- matched_suppliers$bankAccNr
-    df$cs_bankIdCd <- matched_suppliers$bankIdCd
-    df$cs_telephone <- matched_suppliers$telephone
-    df$cs_commerceNr <- matched_suppliers$commerceNr
-    df$cs_streetname <- matched_suppliers$streetName
-    df$cs_postalCode <- matched_suppliers$postalCode
-    df$cs_fax <- matched_suppliers$fax
-    df$cs_eMail <- matched_suppliers$email
-    df$cs_taxRegIdent <- matched_suppliers$taxRegIdent
-    df$cs_contact <- matched_suppliers$contact
+.add_relations <- function(x, relations) {
+  if ("custSupID" %in% colnames(x)) {
+    matched_relations <- relations[match(x$custSupID, relations$custSupID), ]
+    x$cs_custSupName <- matched_relations$custSupName
+    x$cs_taxRegistrationCountry <- matched_relations$taxRegistrationCountry
+    x$cs_custSupTp <- matched_relations$custSupTp
+    x$cs_country <- matched_relations$country
+    x$cs_website <- matched_relations$website
+    x$cs_city <- matched_relations$city
+    x$cs_bankAccNr <- matched_relations$bankAccNr
+    x$cs_bankIdCd <- matched_relations$bankIdCd
+    x$cs_telephone <- matched_relations$telephone
+    x$cs_commerceNr <- matched_relations$commerceNr
+    x$cs_streetname <- matched_relations$streetName
+    x$cs_postalCode <- matched_relations$postalCode
+    x$cs_fax <- matched_relations$fax
+    x$cs_eMail <- matched_relations$email
+    x$cs_taxRegIdent <- matched_relations$taxRegIdent
+    x$cs_contact <- matched_relations$contact
   }
-  return(df)
+  return(x)
 }
 
-.raw_accounts <- function(df, accounts, lang) {
-  matched_accounts <- accounts[match(df$accID, accounts$accID), ]
-  df$accDesc <- matched_accounts$accDesc
-  df$accTp <- matched_accounts$accTp
-  df$leadCode <- matched_accounts$leadCode
-  df$leadDescription <- matched_accounts$leadDescription
-  df$leadReference <- matched_accounts$leadReference
-  df$accountType <- switch(lang,
-    "nl" = ifelse(df$accTp == "P", "Winst & Verlies", ifelse(df$accTp == "B", "Balans", "Onbekend balanstype")),
-    "en" = ifelse(df$accTp == "P", "Profit & Loss", ifelse(df$accTp == "B", "Balance Sheet", "Unknown accounttype"))
+.add_accounts <- function(x, accounts, lang) {
+  matched_accounts <- accounts[match(x$accID, accounts$accID), ]
+  x$accDesc <- matched_accounts$accDesc
+  x$accTp <- matched_accounts$accTp
+  x$leadCode <- matched_accounts$leadCode
+  x$leadDescription <- matched_accounts$leadDescription
+  x$leadReference <- matched_accounts$leadReference
+  x$accountType <- switch(lang,
+    "nl" = ifelse(x$accTp == "P", "Winst & Verlies", ifelse(x$accTp == "B", "Balans", "Onbekend balanstype")),
+    "en" = ifelse(x$accTp == "P", "Profit & Loss", ifelse(x$accTp == "B", "Balance Sheet", "Unknown accounttype"))
   )
   lookup <- switch(lang,
     "nl" = c(
@@ -162,17 +162,17 @@
       "Revenue account", "Financial income and expenses"
     )
   )
-  df$accountKind <- ifelse(!is.na(df$accID), lookup[as.integer(substr(df$accID, 1, 1)) + 1], NA)
-  return(df)
+  x$accountKind <- ifelse(!is.na(x$accID), lookup[as.integer(substr(x$accID, 1, 1)) + 1], NA)
+  return(x)
 }
 
-.raw_journals <- function(df, journals, lang) {
-  matched_journals <- journals[match(df$jrnID, journals$jrnID), ]
-  df$jrn_jrnID <- matched_journals$jrnID
-  df$jrn_desc <- matched_journals$desc
-  df$jrn_tp <- matched_journals$jrnTp
-  df$jrn_offsetAccID <- matched_journals$offsetAccID
-  df$jrn_bankAccNr <- matched_journals$bankAccNr
+.add_journals <- function(x, journals, lang) {
+  matched_journals <- journals[match(x$jrnID, journals$jrnID), ]
+  x$jrn_jrnID <- matched_journals$jrnID
+  x$jrn_desc <- matched_journals$desc
+  x$jrn_tp <- matched_journals$jrnTp
+  x$jrn_offsetAccID <- matched_journals$offsetAccID
+  x$jrn_bankAccNr <- matched_journals$bankAccNr
   lookup <- switch(lang,
     "nl" = c(
       "Z" = "Memoriaal", "B" = "Bankboek", "P" = "Inkoopboek", "O" = "Open/Sluit balans",
@@ -187,110 +187,110 @@
     "nl" = "Onbekend dagboek",
     "en" = "Unknown journal"
   )
-  df$jrn_journalType <- ifelse(!is.na(matched_journals$jrnTp), ifelse(df$jrn_tp %in% names(lookup), lookup[df$jrn_tp], unknown), NA)
-  return(df)
+  x$jrn_journalType <- ifelse(!is.na(matched_journals$jrnTp), ifelse(x$jrn_tp %in% names(lookup), lookup[x$jrn_tp], unknown), NA)
+  return(x)
 }
 
-.raw_info <- function(df, file, header, company, transactions) {
-  df$periodNumber <- as.numeric(df$periodNumber)
-  df$trDt <- as.Date(df$trDt)
-  df$effDate <- as.Date(df$effDate)
-  df$fiscalYear <- header$fiscalYear[[1]]
-  df$startDate <- header$startDate[[1]]
-  df$endDate <- header$endDate[[1]]
-  df$curCode <- header$curCode[[1]]
-  df$dateCreated <- header$dateCreated[[1]]
-  df$softwareDesc <- header$softwareDesc[[1]]
-  df$companyIdent <- company$companyIdent[[1]]
-  df$companyName <- company$companyName[[1]]
-  df$taxRegistrationCountry <- company$taxRegistrationCountry[[1]]
-  df$taxRegIdent <- if (length(company$taxRegIdent) > 0) company$taxRegIdent[[1]] else NA
-  df$linesCount <- as.numeric(transactions$linesCount[[1]])
-  df$totalDebit <- as.numeric(transactions$totalDebit[[1]])
-  df$totalCredit <- as.numeric(transactions$totalCredit[[1]])
-  df$effMonth <- match(months(df$effDate), month.name)
-  return(df)
+.add_info <- function(x, file, header, company, transactions) {
+  x$periodNumber <- as.numeric(x$periodNumber)
+  x$trDt <- as.Date(x$trDt)
+  x$effDate <- as.Date(x$effDate)
+  x$fiscalYear <- header$fiscalYear[[1]]
+  x$startDate <- header$startDate[[1]]
+  x$endDate <- header$endDate[[1]]
+  x$curCode <- header$curCode[[1]]
+  x$dateCreated <- header$dateCreated[[1]]
+  x$softwareDesc <- header$softwareDesc[[1]]
+  x$companyIdent <- company$companyIdent[[1]]
+  x$companyName <- company$companyName[[1]]
+  x$taxRegistrationCountry <- company$taxRegistrationCountry[[1]]
+  x$taxRegIdent <- if (length(company$taxRegIdent) > 0) company$taxRegIdent[[1]] else NA
+  x$linesCount <- as.numeric(transactions$linesCount[[1]])
+  x$totalDebit <- as.numeric(transactions$totalDebit[[1]])
+  x$totalCredit <- as.numeric(transactions$totalCredit[[1]])
+  x$effMonth <- match(months(x$effDate), month.name)
+  return(x)
 }
 
-.clean_xaf <- function(df, clean, lang) {
+.clean_mutations <- function(x, clean, lang) {
   if (!clean) {
-    result <- df
+    mutations <- x
   } else {
     if (lang == "nl") {
-      result <- data.frame(
-        Dagboekcode = df$jrnID,
-        Dagboek = df$jrn_desc,
-        Datum = df$effDate,
-        Periode = df$periodNumber,
-        Grootboekcode = df$accID,
-        Grootboek = df$accDesc,
-        Omschrijving = df$desc,
-        Boekstuk = if (!is.null(df$docRef)) df$docRef else NA,
-        Debet = df$debet,
-        Credit = df$credit,
-        Saldo = df$amount,
-        BTW.Code = if ("vatID" %in% colnames(df)) df$vatID else NA,
-        BTW.Omschrijving = if ("vatID" %in% colnames(df)) df$vatDesc else NA,
-        BTW.Saldo = if ("vatID" %in% colnames(df)) df$vat_amount else NA,
-        Relatienummer = if ("custSupID" %in% colnames(df)) df$custSupID else NA,
-        Relatie = if ("custSupID" %in% colnames(df)) df$cs_custSupName else NA,
-        Volgnummer = df$nr,
-        Lead.Code = if ("leadCode" %in% colnames(df)) df$leadCode else NA,
-        Lead.Omschrijving = if ("leadDescription" %in% colnames(df)) df$leadDescription else NA,
-        Soort = df$accountType,
-        Type = df$accountKind,
-        Verwerkingsdatum = df$trDt
+      mutations <- data.frame(
+        Dagboekcode = x$jrnID,
+        Dagboek = x$jrn_desc,
+        Datum = x$effDate,
+        Periode = x$periodNumber,
+        Grootboekcode = x$accID,
+        Grootboek = x$accDesc,
+        Omschrijving = x$desc,
+        Boekstuk = if (!is.null(x$docRef)) x$docRef else NA,
+        Debet = x$debet,
+        Credit = x$credit,
+        Saldo = x$amount,
+        BTW.Code = if ("vatID" %in% colnames(x)) x$vatID else NA,
+        BTW.Omschrijving = if ("vatID" %in% colnames(x)) x$vatDesc else NA,
+        BTW.Saldo = if ("vatID" %in% colnames(x)) x$vat_amount else NA,
+        Relatienummer = if ("custSupID" %in% colnames(x)) x$custSupID else NA,
+        Relatie = if ("custSupID" %in% colnames(x)) x$cs_custSupName else NA,
+        Volgnummer = x$nr,
+        Lead.Code = if ("leadCode" %in% colnames(x)) x$leadCode else NA,
+        Lead.Omschrijving = if ("leadDescription" %in% colnames(x)) x$leadDescription else NA,
+        Soort = x$accountType,
+        Type = x$accountKind,
+        Verwerkingsdatum = x$trDt
       )
-      rownames(result) <- seq_len(nrow(result))
-      attr(result, "Bestandsnaam") <- unique(df$file)
-      attr(result, "Datum") <- unique(df$dateCreated)
-      attr(result, "Bedrijfsnaam") <- unique(df$companyName)
-      attr(result, "Software") <- unique(df$softwareDesc)
-      attr(result, "BTW.Land") <- unique(df$taxRegistrationCountry)
-      attr(result, "Valuta") <- unique(df$curCode)
-      attr(result, "FiscaalJaar") <- unique(df$fiscalYear)
-      attr(result, "StartDatum") <- unique(df$startDate)
-      attr(result, "EindDatum") <- unique(df$endDate)
-      attr(result, "TotaalDebet") <- unique(df$totalDebit)
-      attr(result, "TotaalCredit") <- unique(df$totalCredit)
+      rownames(mutations) <- seq_len(nrow(mutations))
+      attr(mutations, "Bestandsnaam") <- unique(x$file)
+      attr(mutations, "Datum") <- unique(x$dateCreated)
+      attr(mutations, "Bedrijfsnaam") <- unique(x$companyName)
+      attr(mutations, "Software") <- unique(x$softwareDesc)
+      attr(mutations, "BTW.Land") <- unique(x$taxRegistrationCountry)
+      attr(mutations, "Valuta") <- unique(x$curCode)
+      attr(mutations, "FiscaalJaar") <- unique(x$fiscalYear)
+      attr(mutations, "StartDatum") <- unique(x$startDate)
+      attr(mutations, "EindDatum") <- unique(x$endDate)
+      attr(mutations, "TotaalDebet") <- unique(x$totalDebit)
+      attr(mutations, "TotaalCredit") <- unique(x$totalCredit)
     } else if (lang == "en") {
-      result <- data.frame(
-        JournalID = df$jrnID,
-        Journal = df$jrn_desc,
-        Date = df$effDate,
-        Period = df$periodNumber,
-        AccountID = df$accID,
-        Account = df$accDesc,
-        Description = df$desc,
-        Document = if (!is.null(df$docRef)) df$docRef else NA,
-        Debit = df$debet,
-        Credit = df$credit,
-        Amount = df$amount,
-        VAT.Code = if ("vatID" %in% colnames(df)) df$vatID else NA,
-        VAT.Description = if ("vatID" %in% colnames(df)) df$vatDesc else NA,
-        VAT.Amount = if ("vatID" %in% colnames(df)) df$vat_amount else NA,
-        RelationID = if ("custSupID" %in% colnames(df)) df$custSupID else NA,
-        Relation = if ("custSupID" %in% colnames(df)) df$cs_custSupName else NA,
-        Number = df$nr,
-        Lead.Code = if ("leadCode" %in% colnames(df)) df$leadCode else NA,
-        Lead.Description = if ("leadDescription" %in% colnames(df)) df$leadDescription else NA,
-        Type = df$accountType,
-        Kind = df$accountKind,
-        Effective.Date = df$trDt
+      mutations <- data.frame(
+        JournalID = x$jrnID,
+        Journal = x$jrn_desc,
+        Date = x$effDate,
+        Period = x$periodNumber,
+        AccountID = x$accID,
+        Account = x$accDesc,
+        Description = x$desc,
+        Document = if (!is.null(x$docRef)) x$docRef else NA,
+        Debit = x$debet,
+        Credit = x$credit,
+        Amount = x$amount,
+        VAT.Code = if ("vatID" %in% colnames(x)) x$vatID else NA,
+        VAT.Description = if ("vatID" %in% colnames(x)) x$vatDesc else NA,
+        VAT.Amount = if ("vatID" %in% colnames(x)) x$vat_amount else NA,
+        RelationID = if ("custSupID" %in% colnames(x)) x$custSupID else NA,
+        Relation = if ("custSupID" %in% colnames(x)) x$cs_custSupName else NA,
+        Number = x$nr,
+        Lead.Code = if ("leadCode" %in% colnames(x)) x$leadCode else NA,
+        Lead.Description = if ("leadDescription" %in% colnames(x)) x$leadDescription else NA,
+        Type = x$accountType,
+        Kind = x$accountKind,
+        Effective.Date = x$trDt
       )
-      rownames(result) <- seq_len(nrow(result))
-      attr(result, "File") <- unique(df$file)
-      attr(result, "Date") <- unique(df$dateCreated)
-      attr(result, "Company") <- unique(df$companyName)
-      attr(result, "Software") <- unique(df$softwareDesc)
-      attr(result, "VAT.Country") <- unique(df$taxRegistrationCountry)
-      attr(result, "Currency") <- unique(df$curCode)
-      attr(result, "FiscalYear") <- unique(df$fiscalYear)
-      attr(result, "StartDate") <- unique(df$startDate)
-      attr(result, "EndDate") <- unique(df$endDate)
-      attr(result, "TotalDebit") <- unique(df$totalDebit)
-      attr(result, "TotalCredit") <- unique(df$totalCredit)
+      rownames(mutations) <- seq_len(nrow(mutations))
+      attr(mutations, "File") <- unique(x$file)
+      attr(mutations, "Date") <- unique(x$dateCreated)
+      attr(mutations, "Company") <- unique(x$companyName)
+      attr(mutations, "Software") <- unique(x$softwareDesc)
+      attr(mutations, "VAT.Country") <- unique(x$taxRegistrationCountry)
+      attr(mutations, "Currency") <- unique(x$curCode)
+      attr(mutations, "FiscalYear") <- unique(x$fiscalYear)
+      attr(mutations, "StartDate") <- unique(x$startDate)
+      attr(mutations, "EndDate") <- unique(x$endDate)
+      attr(mutations, "TotalDebit") <- unique(x$totalDebit)
+      attr(mutations, "TotalCredit") <- unique(x$totalCredit)
     }
   }
-  return(result)
+  return(mutations)
 }

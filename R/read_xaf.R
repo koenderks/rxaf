@@ -75,32 +75,32 @@ read_xaf <- function(file,
   accounts <- .construct_subtable(company, "generalLedger", "ledgerAccount", "accID")
   vats <- .construct_subtable(company, "vatCodes", "vatCode", "vatID")
   relations <- .construct_subtable(company, "customersSuppliers", "customerSupplier", "custSupID")
-  df <- .construct_mutations(company$transactions, progress)
-  df <- .raw_amounts(df)
-  df <- .raw_vats(df, vats)
-  df <- .raw_relations(df, relations)
-  df <- .raw_accounts(df, accounts, lang)
-  df <- .raw_journals(df, journals, lang)
-  df <- .raw_info(df, file, header, company, company$transactions)
-  result <- .clean_xaf(df, clean, lang)
-  attr(result, "lang") <- lang
-  attr(result, "clean") <- clean
-  attr(result, switch(lang,
+  mutations <- .construct_mutations(company$transactions, progress)
+  mutations <- .add_amounts(mutations)
+  mutations <- .add_vats(mutations, vats)
+  mutations <- .add_relations(mutations, relations)
+  mutations <- .add_accounts(mutations, accounts, lang)
+  mutations <- .add_journals(mutations, journals, lang)
+  mutations <- .add_info(mutations, file, header, company, company$transactions)
+  mutations <- .clean_mutations(mutations, clean, lang)
+  attr(mutations, "lang") <- lang
+  attr(mutations, "clean") <- clean
+  attr(mutations, switch(lang,
     "nl" = "Dagboeken",
     "en" = "Journals"
   )) <- journals
-  attr(result, switch(lang,
+  attr(mutations, switch(lang,
     "nl" = "Grootboeken",
     "en" = "Accounts"
   )) <- accounts
-  attr(result, switch(lang,
+  attr(mutations, switch(lang,
     "nl" = "BTW.Codes",
     "en" = "VAT.Codes"
   )) <- vats
-  attr(result, switch(lang,
+  attr(mutations, switch(lang,
     "nl" = "Relaties",
     "en" = "Relations"
   )) <- relations
-  class(result) <- c(class(result), "xaf")
-  return(result)
+  class(mutations) <- c(class(mutations), "xaf")
+  return(mutations)
 }
