@@ -2,7 +2,7 @@
   data <- company[[data_name]][names(company[[data_name]]) == id_name]
   rows <- lapply(data, function(datapoint) {
     if (!is.null(exclude_name)) {
-      datapoint <- datapoint[which(names(datapoint) != exclude_name)]
+      datapoint <- datapoint[names(datapoint) != exclude_name]
     }
     datapoint[lengths(datapoint) == 0] <- NA
     records <- lengths(datapoint) == 1
@@ -29,10 +29,10 @@
     row <- data.frame(row)
     return(row)
   })
-  tb <- as.data.frame(data.table::rbindlist(rows, fill = TRUE))
-  tb <- tb[order(tb[, sort_name]), ]
-  rownames(tb) <- seq_len(nrow(tb))
-  return(tb)
+  subtable <- as.data.frame(data.table::rbindlist(rows, fill = TRUE))
+  subtable <- subtable[order(subtable[, sort_name]), ]
+  rownames(subtable) <- seq_len(nrow(subtable))
+  return(subtable)
 }
 
 .construct_mutations <- function(transactions, progress) {
@@ -42,7 +42,7 @@
   }
   rows <- vector("list", size)
   index <- 1
-  journals <- transactions[which(names(transactions) == "journal")]
+  journals <- transactions[names(transactions) == "journal"]
   for (journal in journals) {
     journal[lengths(journal) == 0] <- NA
     records <- journal[lengths(journal) > 1]
@@ -86,8 +86,8 @@
       }
     }
   }
-  df <- as.data.frame(data.table::rbindlist(rows, fill = TRUE))
-  return(df)
+  mutations <- as.data.frame(data.table::rbindlist(rows, fill = TRUE))
+  return(mutations)
 }
 
 .add_amounts <- function(x) {
