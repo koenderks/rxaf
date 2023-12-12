@@ -54,25 +54,25 @@
       subfields <- record[lengths(record) > 1]
       record <- record[lengths(record) == 1]
       row2 <- unlist(record)
-      row1 <- row[!(names(row) %in% intersect(names(row), names(row2)))]
-      row <- c(row1, row2)
+      row12 <- row1[!(names(row1) %in% intersect(names(row1), names(row2)))]
+      row12 <- c(row12, row2)
+      row <- row12
       for (subfield in subfields) {
         subfield[lengths(subfield) == 0] <- NA
         subsubfields <- subfield[lengths(subfield) > 1]
         subfield <- subfield[lengths(subfield) == 1]
         row3 <- unlist(subfield)
-        row1 <- row1[!(names(row1) %in% intersect(names(row1), names(row3)))]
-        row2 <- row2[!(names(row2) %in% intersect(names(row2), names(row3)))]
-        row <- c(row1, row2, row3)
+        row23 <- row12[!(names(row12) %in% intersect(names(row12), names(row3)))]
+        row23 <- c(row23, row3)
+        row <- row23
         for (subsubfield in subsubfields) {
           subsubfield[lengths(subsubfield) == 0] <- NA
           subsubsubfields <- subsubfield[lengths(subsubfield) > 1]
           subsubfield <- subsubfield[lengths(subsubfield) == 1]
           row4 <- unlist(subsubfield)
-          row1 <- row1[!(names(row1) %in% intersect(names(row1), names(row4)))]
-          row2 <- row2[!(names(row2) %in% intersect(names(row2), names(row4)))]
-          row2 <- row2[!(names(row2) %in% intersect(names(row2), names(row4)))]
-          row <- c(row1, row2, row3, row4)
+          row34 <- row23[!(names(row23) %in% intersect(names(row23), names(row4)))]
+          row34 <- c(row34, row4)
+          row <- row34
           if (length(subsubsubfields) > 0) {
             print("Unexplored layer found")
           }
