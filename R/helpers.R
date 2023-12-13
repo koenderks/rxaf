@@ -1,3 +1,4 @@
+# Helper function to extract subtables containing journal, accounts, VAT codes and customers/suppliers
 .construct_subtable <- function(company, data_name, id_name, sort_name, exclude_name = NULL) {
   data <- company[[data_name]][names(company[[data_name]]) == id_name]
   rows <- lapply(data, function(datapoint) {
@@ -35,6 +36,7 @@
   return(subtable)
 }
 
+# Function to extract all information from the transactions element of the XAF file
 .construct_mutations <- function(transactions, progress) {
   size <- as.numeric(transactions$linesCount[[1]])
   if (progress) {
@@ -90,6 +92,7 @@
   return(mutations)
 }
 
+# Function to format the mutation amounts
 .add_amounts <- function(x) {
   x$amount <- as.numeric(x$amnt)
   x$amount[x$amntTp != "D"] <- -x$amount[x$amntTp != "D"]
@@ -101,6 +104,7 @@
   return(x)
 }
 
+# Function to match the VAT codes
 .add_vats <- function(x, vats) {
   if ("vatID" %in% colnames(x)) {
     matched_vats <- vats[match(x$vatID, vats$vatID), ]
@@ -113,6 +117,7 @@
   return(x)
 }
 
+# Function to match the customers/suppliers
 .add_relations <- function(x, relations) {
   if ("custSupID" %in% colnames(x)) {
     matched_relations <- relations[match(x$custSupID, relations$custSupID), ]
@@ -136,6 +141,7 @@
   return(x)
 }
 
+# Function to match the accounts
 .add_accounts <- function(x, accounts, lang) {
   matched_accounts <- accounts[match(x$accID, accounts$accID), ]
   x$accDesc <- matched_accounts$accDesc
@@ -147,14 +153,14 @@
     x$accountType <- ifelse(x$accTp == "P", "Winst & Verlies", ifelse(x$accTp == "B", "Balans", "Onbekend balanstype"))
     lookup <- c(
       "Vaste activa en passiva", "Vlottende activa en passiva", "Tussenrekening",
-      "Voorraadrekening", "Kostenrekening", NA, NA, "Kostpijs rekening",
+      "Voorraadrekening", "Kostenrekening", "Overig", "Overig", "Kostpijs rekening",
       "Omzet rekening", "Financiele baten en lasten"
     )
   } else {
     x$accountType <- ifelse(x$accTp == "P", "Profit & Loss", ifelse(x$accTp == "B", "Balance sheet", "Unknown accounttype"))
     lookup <- c(
       "Fixed assets and liabilities", "Current assest and liabilities", "Suspense account",
-      "Inventory account", "Expense account", NA, NA, "Cost account",
+      "Inventory account", "Expense account", "Other", "Other", "Cost account",
       "Revenue account", "Financial income and expenses"
     )
   }
@@ -162,6 +168,7 @@
   return(x)
 }
 
+# Function to match the journals
 .add_journals <- function(x, journals, lang) {
   matched_journals <- journals[match(x$jrnID, journals$jrnID), ]
   x$jrn_jrnID <- matched_journals$jrnID
@@ -186,6 +193,7 @@
   return(x)
 }
 
+# Function to add additional info
 .add_info <- function(x, file, header, company, transactions) {
   x$periodNumber <- as.numeric(x$periodNumber)
   x$trDt <- as.Date(x$trDt)
@@ -207,6 +215,7 @@
   return(x)
 }
 
+# Function to clean the raw data
 .clean_mutations <- function(x, clean, lang) {
   if (!clean) {
     mutations <- x
@@ -290,6 +299,7 @@
   return(mutations)
 }
 
+# Function to create a balance sheet or an income statement
 .xaf_statement <- function(x, date = NULL, type = c("balance_sheet", "income_statement")) {
   type <- match.arg(type)
   stopifnot("'x' is not output from 'read_xaf()'" = inherits(x, "xaf"))
@@ -317,7 +327,7 @@
     subtot <- "Subtotaal"
     lookup <- c(
       "Vaste activa en passiva", "Vlottende activa en passiva", "Tussenrekeningen",
-      "Voorraadrekeningen", "Kostenrekeningen", NA, NA, "Kostpijs rekeningen",
+      "Voorraadrekeningen", "Kostenrekeningen", "Overig", "Overig", "Kostpijs rekeningen",
       "Omzet rekeningen", "Financiele baten en lasten"
     )
     if (type == "balance_sheet") {
@@ -333,7 +343,7 @@
     subtot <- "Subtotal"
     lookup <- c(
       "Fixed assets and liabilities", "Current assest and liabilities", "Suspense accounts",
-      "Inventory accounts", "Expense accounts", NA, NA, "Cost accounts",
+      "Inventory accounts", "Expense accounts", "Other", "Other", "Cost accounts",
       "Revenue accounts", "Financial income and expenses"
     )
     if (type == "balance_sheet") {

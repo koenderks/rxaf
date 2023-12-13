@@ -55,5 +55,5 @@ test_that(desc = "Multivers", {
   balance <- xaf_balance_sheet(result)
   expect_equal(nrow(balance), 43)
   income <- xaf_income_statement(result)
-  expect_equal(nrow(income), 20)
+  expect_equal(nrow(income), 35)
 })
