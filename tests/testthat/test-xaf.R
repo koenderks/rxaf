@@ -4,6 +4,10 @@ test_that(desc = "ExactOnline", {
   expect_equal(ncol(result), 22)
   sub <- xaf_subtables(result)
   expect_equal(length(sub), 4)
+  balance <- xaf_balance_sheet(result)
+  expect_equal(nrow(balance), 24)
+  income <- xaf_income_statement(result)
+  expect_equal(nrow(income), 20)
 })
 
 test_that(desc = "osFinancials", {
@@ -12,6 +16,10 @@ test_that(desc = "osFinancials", {
   expect_equal(ncol(result), 22)
   sub <- xaf_subtables(result)
   expect_equal(length(sub), 4)
+  balance <- xaf_balance_sheet(result)
+  expect_equal(nrow(balance), 9)
+  income <- xaf_income_statement(result)
+  expect_equal(nrow(income), 2)
 })
 
 test_that(desc = "AFAS", {
@@ -20,6 +28,10 @@ test_that(desc = "AFAS", {
   expect_equal(ncol(result), 22)
   sub <- xaf_subtables(result)
   expect_equal(length(sub), 4)
+  balance <- xaf_balance_sheet(result)
+  expect_equal(nrow(balance), 49)
+  income <- xaf_income_statement(result)
+  expect_equal(nrow(income), 83)
 })
 
 test_that(desc = "Twinfield", {
@@ -28,6 +40,10 @@ test_that(desc = "Twinfield", {
   expect_equal(ncol(result), 22)
   sub <- xaf_subtables(result)
   expect_equal(length(sub), 4)
+  balance <- xaf_balance_sheet(result)
+  expect_equal(nrow(balance), 32)
+  income <- xaf_income_statement(result)
+  expect_equal(nrow(income), 24)
 })
 
 test_that(desc = "Multivers", {
@@ -36,4 +52,8 @@ test_that(desc = "Multivers", {
   expect_equal(ncol(result), 22)
   sub <- xaf_subtables(result)
   expect_equal(length(sub), 4)
+  balance <- xaf_balance_sheet(result)
+  expect_equal(nrow(balance), 43)
+  income <- xaf_income_statement(result)
+  expect_equal(nrow(income), 20)
 })

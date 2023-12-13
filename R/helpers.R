@@ -289,3 +289,117 @@
   }
   return(mutations)
 }
+
+.xaf_statement <- function(x, date = NULL, type = c("balance_sheet", "income_statement")) {
+  type <- match.arg(type)
+  stopifnot("'x' is not output from 'read_xaf()'" = inherits(x, "xaf"))
+  stopifnot("not supported for uncleaned files'" = attr(x, "clean"))
+  lang <- attr(x, "lang")
+  if (!is.null(date)) {
+    date <- try(as.Date(date, format = "%d-%m-%Y"))
+    stopifnot("stop" = !inherits(date, "try-error"))
+    if (lang == "nl") {
+      x_new <- x[x$Datum <= date, ]
+      dates <- x$Datum
+    } else {
+      x_new <- x[x$Date <= date, ]
+      dates <- x$Date
+    }
+    if (nrow(x_new) == 0) {
+      stop(paste0("No mutations before ", date, "; first mutation on ", min(dates), " and last mutation on ", max(dates)))
+    }
+    x <- x_new
+  }
+  if (lang == "nl") {
+    cols <- c("Categorie", "Nummer", "Grootboek", "Saldo")
+    accounts <- attr(x, "Grootboeken")
+    tot <- "Totaal"
+    subtot <- "Subtotaal"
+    lookup <- c(
+      "Vaste activa en passiva", "Vlottende activa en passiva", "Tussenrekeningen",
+      "Voorraadrekeningen", "Kostenrekeningen", NA, NA, "Kostpijs rekeningen",
+      "Omzet rekeningen", "Financiele baten en lasten"
+    )
+    if (type == "balance_sheet") {
+      searchterm <- "Balans"
+    } else {
+      searchterm <- "Winst & Verlies"
+    }
+    statement <- aggregate(x[x$Soort == searchterm, ]$Saldo, by = list(b = x[x$Soort == searchterm, ]$Grootboek), FUN = sum, na.rm = TRUE)
+  } else {
+    cols <- c("Category", "Number", "Account", "Amount")
+    accounts <- attr(x, "Accounts")
+    tot <- "Total"
+    subtot <- "Subtotal"
+    lookup <- c(
+      "Fixed assets and liabilities", "Current assest and liabilities", "Suspense accounts",
+      "Inventory accounts", "Expense accounts", NA, NA, "Cost accounts",
+      "Revenue accounts", "Financial income and expenses"
+    )
+    if (type == "balance_sheet") {
+      searchterm <- "Balance sheet"
+    } else {
+      searchterm <- "Profit & Loss"
+    }
+    statement <- aggregate(x[x$Type == searchterm, ]$Amount, by = list(b = x[x$Soort == searchterm, ]$Account), FUN = sum, na.rm = TRUE)
+  }
+  if (type == "income_statement") {
+    statement$x <- -statement$x
+  }
+  matched_accounts <- accounts[match(statement$b, accounts$accDesc), ]
+  rek <- ifelse(!is.na(matched_accounts$accID), lookup[as.integer(substr(matched_accounts$accID, 1, 1)) + 1], NA)
+  statement <- cbind(rek = rek, id = matched_accounts$accID, statement)
+  statement <- statement[order(statement$id), ]
+  colnames(statement) <- cols
+  rownames(statement) <- seq_len(nrow(statement))
+  statement[, 1] <- ifelse(duplicated(statement[, 1]), "", statement[, 1])
+  result <- data.frame(character(), character(), character(), numeric())
+  colnames(result) <- colnames(statement)
+  for (i in seq_len(nrow(statement))) {
+    if (i == 1) {
+      index <- 1
+      result <- rbind(result, statement[1, ])
+    } else {
+      if (i == nrow(statement)) {
+        if (!is.na(statement[i, 1]) && statement[i, 1] == "") {
+          result <- rbind(result, statement[i, ])
+          df <- data.frame(subtot, "", "", sum(statement[index, 4]))
+          names(df) <- names(statement)
+          result <- rbind(result, df)
+        } else {
+          df <- data.frame(subtot, "", "", sum(statement[index, 4]))
+          names(df) <- names(statement)
+          result <- rbind(result, df)
+          result <- rbind(result, statement[i, ])
+          df <- data.frame(subtot, "", "", sum(statement[nrow(statement), 4]))
+          names(df) <- names(statement)
+          result <- rbind(result, df)
+        }
+      } else {
+        if (!is.na(statement[i, 1]) && statement[i, 1] != "") {
+          df <- data.frame(subtot, "", "", sum(statement[index, 4]))
+          names(df) <- names(statement)
+          result <- rbind(result, df)
+          index <- i
+          result <- rbind(result, statement[i, ])
+        } else {
+          if (is.na(statement[i, 1])) {
+            df <- data.frame(subtot, "", "", sum(statement[index, 4]))
+            names(df) <- names(statement)
+            result <- rbind(result, df)
+            result <- rbind(result, statement[i, ])
+            index <- i
+          } else {
+            index <- c(index, i)
+            result <- rbind(result, statement[i, ])
+          }
+        }
+      }
+    }
+  }
+  row <- data.frame(tot, "", "", sum(statement[, 4]))
+  names(row) <- names(statement)
+  result <- rbind(result, row)
+  rownames(result) <- seq_len(nrow(result))
+  return(result)
+}
