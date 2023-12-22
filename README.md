@@ -22,7 +22,7 @@ library(rxaf)
 dataset <- read_xaf("https://github.com/koenderks/rxaf/raw/master/tests/testthat/ExactOnline.xaf")
 
 # Create a balance sheet or income statement at december 20, 2023
-balance_sheet(dataset, date = "20-12-2023") # or income_statement(dataset, date = "20-12-2023")
+xaf_balance_sheet(dataset, date = "20-12-2023") # or income_statement(dataset, date = "20-12-2023")
 
 #                      Categorie Nummer                            Grootboek      Saldo
 # 1      Vaste activa en passiva   0110 Personeelsactiviteiten "buitenshuis"    8264.46
