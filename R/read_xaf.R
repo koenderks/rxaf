@@ -85,6 +85,7 @@ read_xaf <- function(file,
   mutations <- .clean_mutations(mutations, clean, lang)
   attr(mutations, "lang") <- lang
   attr(mutations, "clean") <- clean
+  attr(mutations, "version") <- version
   if (lang == "nl") {
     attr(mutations, "Dagboeken") <- journals
     attr(mutations, "Grootboeken") <- accounts
