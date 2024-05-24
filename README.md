@@ -1,4 +1,4 @@
-# rxaf: Read and Analyze Dutch XML Audit Files <img src='https://github.com/koenderks/rxaf/raw/development/man/figures/logo.png' width='149' height='173' align='right'/>
+# rxaf: Read and Analyze Dutch XML Audit Files <img src='https://github.com/koenderks/rxaf/raw/master/man/figures/logo.png' width='149' height='173' align='right'/>
 
 The `rxaf` package provides functionality in R for reading and analyzing Dutch XML Audit Files (XAF), which are used in the Netherlands for financial and auditing purposes.
 
