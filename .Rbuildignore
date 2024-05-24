@@ -2,7 +2,7 @@
 ^cran-comments.md$
 ^codecov.yml$
 ^.github$
-^logo\.png$
+^man/figures/logo$
 ^Meta$
 ^CRAN-RELEASE$
 ^CITATION\.cff$
